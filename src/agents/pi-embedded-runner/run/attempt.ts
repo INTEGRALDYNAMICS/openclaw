@@ -208,6 +208,18 @@ export function shouldInjectOllamaCompatNumCtx(params: {
   });
 }
 
+export function resolveStreamIdleTimeoutMs(cfg?: OpenClawConfig): number | undefined {
+  const raw = cfg?.agents?.defaults?.streamIdleTimeoutSeconds;
+  if (typeof raw !== "number" || !Number.isFinite(raw)) {
+    return undefined;
+  }
+  const normalized = Math.max(0, Math.floor(raw));
+  if (normalized <= 0) {
+    return undefined;
+  }
+  return normalized * 1000;
+}
+
 export function wrapOllamaCompatNumCtx(baseFn: StreamFn | undefined, numCtx: number): StreamFn {
   const streamFn = baseFn ?? streamSimple;
   return (model, context, options) =>
@@ -1164,6 +1176,13 @@ export async function runEmbeddedAttempt(
         });
       };
 
+      const streamIdleTimeoutMs = resolveStreamIdleTimeoutMs(params.config);
+      let markRunActivity: (() => void) | undefined;
+      const onAgentEventWithActivity = (evt: { stream: string; data: Record<string, unknown> }) => {
+        markRunActivity?.();
+        void params.onAgentEvent?.(evt);
+      };
+
       const subscription = subscribeEmbeddedPiSession({
         session: activeSession,
         runId: params.runId,
@@ -1182,7 +1201,7 @@ export async function runEmbeddedAttempt(
         blockReplyChunking: params.blockReplyChunking,
         onPartialReply: params.onPartialReply,
         onAssistantMessageStart: params.onAssistantMessageStart,
-        onAgentEvent: params.onAgentEvent,
+        onAgentEvent: onAgentEventWithActivity,
         enforceFinalTag: params.enforceFinalTag,
         config: params.config,
         sessionKey: sandboxSessionKey,
@@ -1215,38 +1234,63 @@ export async function runEmbeddedAttempt(
 
       let abortWarnTimer: NodeJS.Timeout | undefined;
       const isProbeSession = params.sessionId?.startsWith("probe-") ?? false;
-      const abortTimer = setTimeout(
-        () => {
-          if (!isProbeSession) {
+      let lastActivityAt = Date.now();
+      let abortTimer: NodeJS.Timeout | undefined;
+      const onRunTimeout = (mode: "run" | "idle", timeoutMs: number) => {
+        if (!isProbeSession) {
+          if (mode === "idle") {
+            const idleForMs = Math.max(0, Date.now() - lastActivityAt);
             log.warn(
-              `embedded run timeout: runId=${params.runId} sessionId=${params.sessionId} timeoutMs=${params.timeoutMs}`,
+              `embedded run stream idle timeout: runId=${params.runId} sessionId=${params.sessionId} idleTimeoutMs=${timeoutMs} idleForMs=${idleForMs}`,
+            );
+          } else {
+            log.warn(
+              `embedded run timeout: runId=${params.runId} sessionId=${params.sessionId} timeoutMs=${timeoutMs}`,
             );
           }
-          if (
-            shouldFlagCompactionTimeout({
-              isTimeout: true,
-              isCompactionPendingOrRetrying: subscription.isCompacting(),
-              isCompactionInFlight: activeSession.isCompacting,
-            })
-          ) {
-            timedOutDuringCompaction = true;
-          }
-          abortRun(true);
-          if (!abortWarnTimer) {
-            abortWarnTimer = setTimeout(() => {
-              if (!activeSession.isStreaming) {
-                return;
-              }
-              if (!isProbeSession) {
-                log.warn(
-                  `embedded run abort still streaming: runId=${params.runId} sessionId=${params.sessionId}`,
-                );
-              }
-            }, 10_000);
-          }
-        },
-        Math.max(1, params.timeoutMs),
-      );
+        }
+        if (
+          shouldFlagCompactionTimeout({
+            isTimeout: true,
+            isCompactionPendingOrRetrying: subscription.isCompacting(),
+            isCompactionInFlight: activeSession.isCompacting,
+          })
+        ) {
+          timedOutDuringCompaction = true;
+        }
+        abortRun(true);
+        if (!abortWarnTimer) {
+          abortWarnTimer = setTimeout(() => {
+            if (!activeSession.isStreaming) {
+              return;
+            }
+            if (!isProbeSession) {
+              log.warn(
+                `embedded run abort still streaming: runId=${params.runId} sessionId=${params.sessionId}`,
+              );
+            }
+          }, 10_000);
+        }
+      };
+      const scheduleRunTimeout = (timeoutMs: number, mode: "run" | "idle") => {
+        if (abortTimer) {
+          clearTimeout(abortTimer);
+        }
+        abortTimer = setTimeout(
+          () => {
+            onRunTimeout(mode, timeoutMs);
+          },
+          Math.max(1, timeoutMs),
+        );
+      };
+      scheduleRunTimeout(params.timeoutMs, "run");
+      markRunActivity = () => {
+        if (!streamIdleTimeoutMs || aborted || timedOut) {
+          return;
+        }
+        lastActivityAt = Date.now();
+        scheduleRunTimeout(streamIdleTimeoutMs, "idle");
+      };
 
       let messagesSnapshot: AgentMessage[] = [];
       let sessionIdUsed = activeSession.sessionId;
@@ -1547,7 +1591,9 @@ export async function runEmbeddedAttempt(
             });
         }
       } finally {
-        clearTimeout(abortTimer);
+        if (abortTimer) {
+          clearTimeout(abortTimer);
+        }
         if (abortWarnTimer) {
           clearTimeout(abortWarnTimer);
         }

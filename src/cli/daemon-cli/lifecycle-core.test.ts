@@ -83,7 +83,7 @@ describe("runServiceRestart token drift", () => {
     expect(payload.warnings?.[0]).toContain("gateway install --force");
   });
 
-  it("uses env-first token precedence when checking drift", async () => {
+  it("uses config-first token precedence when checking drift", async () => {
     loadConfig.mockReturnValue({
       gateway: {
         auth: {
@@ -92,7 +92,7 @@ describe("runServiceRestart token drift", () => {
       },
     });
     service.readCommand.mockResolvedValue({
-      environment: { OPENCLAW_GATEWAY_TOKEN: "env-token" },
+      environment: { OPENCLAW_GATEWAY_TOKEN: "config-token" },
     });
     vi.stubEnv("OPENCLAW_GATEWAY_TOKEN", "env-token");
 

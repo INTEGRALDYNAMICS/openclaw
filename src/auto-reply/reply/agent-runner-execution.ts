@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import { runCliAgent } from "../../agents/cli-runner.js";
 import { getCliSessionId } from "../../agents/cli-session.js";
+import { isTimeoutError } from "../../agents/failover-error.js";
 import { runWithModelFallback } from "../../agents/model-fallback.js";
 import { isCliProvider } from "../../agents/model-selection.js";
 import {
@@ -479,6 +480,7 @@ export async function runAgentTurnWithFallback(params: {
       const isSessionCorruption = /function call turn comes immediately after/i.test(message);
       const isRoleOrderingError = /incorrect role information|roles must alternate/i.test(message);
       const isTransientHttp = isTransientHttpError(message);
+      const isTimeoutFailure = isTimeoutError(err);
 
       if (
         isCompactionFailure &&
@@ -550,7 +552,10 @@ export async function runAgentTurnWithFallback(params: {
         };
       }
 
-      if (isTransientHttp && !didRetryTransientHttpError) {
+      // Avoid "retry-on-timeout" loops: model-level timeouts are already governed
+      // by run timeout and model fallback. Retrying transient HTTP here adds long
+      // extra latency and can look like ignored messages on chat surfaces.
+      if (isTransientHttp && !isTimeoutFailure && !didRetryTransientHttpError) {
         didRetryTransientHttpError = true;
         // Retry the full runWithModelFallback() cycle — transient errors
         // (502/521/etc.) typically affect the whole provider, so falling

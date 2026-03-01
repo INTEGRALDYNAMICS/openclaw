@@ -285,6 +285,9 @@ export async function runServiceRestart(params: {
         cfg,
         env: process.env,
         modeOverride: "local",
+        includeLegacyEnv: false,
+        localTokenPrecedence: "config-first",
+        localPasswordPrecedence: "config-first",
       }).token;
       const driftIssue = checkTokenDrift({ serviceToken, configToken });
       if (driftIssue) {
