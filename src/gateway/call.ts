@@ -301,6 +301,11 @@ function resolveGatewayCredentials(context: ResolvedGatewayCallContext): {
     explicitAuth: context.explicitAuth,
     urlOverride: context.urlOverride,
     urlOverrideSource: context.urlOverrideSource,
+    // For local CLI gateway calls, prefer configured shared credentials over ambient shell env.
+    // This prevents stale OPENCLAW_GATEWAY_TOKEN values from silently overriding the active config.
+    localTokenPrecedence: "config-first",
+    localPasswordPrecedence: "config-first",
+    includeLegacyEnv: false,
     remotePasswordPrecedence: "env-first",
   });
 }

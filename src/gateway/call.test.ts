@@ -613,7 +613,7 @@ describe("callGateway password resolution", () => {
       expectedPassword: "secret",
     },
     {
-      label: "prefers env password over local config password",
+      label: "prefers local config password over env password in local mode",
       envPassword: "from-env",
       config: {
         gateway: {
@@ -622,7 +622,7 @@ describe("callGateway password resolution", () => {
           auth: { password: "from-config" },
         },
       },
-      expectedPassword: "from-env",
+      expectedPassword: "from-config",
     },
     {
       label: "uses remote password in remote mode when env is unset",
@@ -645,6 +645,21 @@ describe("callGateway password resolution", () => {
     await callGateway({ method: "health" });
 
     expect(lastClientOptions?.password).toBe(expectedPassword);
+  });
+
+  it("prefers local config token over env token in local mode", async () => {
+    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
+    loadConfig.mockReturnValue({
+      gateway: {
+        mode: "local",
+        bind: "loopback",
+        auth: { token: "from-config" },
+      },
+    });
+
+    await callGateway({ method: "health" });
+
+    expect(lastClientOptions?.token).toBe("from-config");
   });
 
   it.each(explicitAuthCases)("uses explicit $label when url override is set", async (testCase) => {
