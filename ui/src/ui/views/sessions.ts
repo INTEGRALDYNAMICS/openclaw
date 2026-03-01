@@ -30,6 +30,7 @@ export type SessionsProps = {
     },
   ) => void;
   onDelete: (key: string) => void;
+  onNewSession: () => void;
 };
 
 const THINK_LEVELS = ["", "off", "minimal", "low", "medium", "high", "xhigh"] as const;
@@ -116,9 +117,14 @@ export function renderSessions(props: SessionsProps) {
           <div class="card-title">Sessions</div>
           <div class="card-sub">Active session keys and per-session overrides.</div>
         </div>
-        <button class="btn" ?disabled=${props.loading} @click=${props.onRefresh}>
-          ${props.loading ? "Loading…" : "Refresh"}
-        </button>
+        <div class="row" style="gap: 8px;">
+          <button class="btn btn--primary" ?disabled=${props.loading} @click=${props.onNewSession}>
+            New Session
+          </button>
+          <button class="btn" ?disabled=${props.loading} @click=${props.onRefresh}>
+            ${props.loading ? "Loading…" : "Refresh"}
+          </button>
+        </div>
       </div>
 
       <div class="filters" style="margin-top: 14px;">

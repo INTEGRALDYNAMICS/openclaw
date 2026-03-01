@@ -1,5 +1,6 @@
 import { LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import { parseAgentSessionKey } from "../../../src/routing/session-key.js";
 import { i18n, I18nController, isSupportedLocale } from "../i18n/index.ts";
 import {
   handleChannelConfigReload as handleChannelConfigReloadInternal,
@@ -613,6 +614,46 @@ export class OpenClawApp extends LitElement {
     const newRatio = Math.max(0.4, Math.min(0.7, ratio));
     this.splitRatio = newRatio;
     this.applySettings({ ...this.settings, splitRatio: newRatio });
+  }
+
+  async handleNewSession() {
+    const parsed = parseAgentSessionKey(this.sessionKey);
+    const agentId = parsed?.agentId || this.assistantAgentId || "main";
+    const nextUuid = generateUUID();
+    const nextKey = `agent:${agentId}:${nextUuid}`;
+
+    this.sessionKey = nextKey;
+    this.chatMessage = "";
+    this.chatAttachments = [];
+    this.chatStream = null;
+    this.chatStreamStartedAt = null;
+    this.chatRunId = null;
+    this.chatQueue = [];
+    this.resetToolStream();
+
+    this.applySettings({
+      ...this.settings,
+      sessionKey: nextKey,
+      lastActiveSessionKey: nextKey,
+    });
+
+    // If not in chat tab, switch to it
+    if (this.tab !== "chat") {
+      this.setTab("chat");
+    } else {
+      // Sync URL manually if already in chat tab
+      const { syncUrlWithSessionKey } = await import("./app-settings.ts");
+      syncUrlWithSessionKey(
+        this as unknown as Parameters<typeof syncUrlWithSessionKey>[0],
+        nextKey,
+        false,
+      );
+      void this.loadAssistantIdentity();
+      const { loadChatHistory } = await import("./controllers/chat.ts");
+      void loadChatHistory(this as unknown as Parameters<typeof loadChatHistory>[0]);
+      const { refreshChatAvatar } = await import("./app-chat.ts");
+      void refreshChatAvatar(this as unknown as Parameters<typeof refreshChatAvatar>[0]);
+    }
   }
 
   render() {

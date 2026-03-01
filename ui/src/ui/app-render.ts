@@ -434,6 +434,7 @@ export function renderApp(state: AppViewState) {
                 onRefresh: () => loadSessions(state),
                 onPatch: (key, patch) => patchSession(state, key, patch),
                 onDelete: (key) => deleteSessionAndRefresh(state, key),
+                onNewSession: () => void state.handleNewSession(),
               })
             : nothing
         }
@@ -1060,7 +1061,7 @@ export function renderApp(state: AppViewState) {
                 canAbort: Boolean(state.chatRunId),
                 onAbort: () => void state.handleAbortChat(),
                 onQueueRemove: (id) => state.removeQueuedMessage(id),
-                onNewSession: () => state.handleSendChat("/new", { restoreDraft: true }),
+                onNewSession: () => void state.handleNewSession(),
                 showNewMessages: state.chatNewMessagesBelow && !state.chatManualRefreshInFlight,
                 onScrollToBottom: () => state.scrollToBottom(),
                 // Sidebar props for tool output viewing
