@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it, type Mock } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, type Mock } from "vitest";
 import { resolveSessionTranscriptPath } from "../config/sessions.js";
 import { emitAgentEvent } from "../infra/agent-events.js";
 import { captureEnv } from "../test-utils/env.js";
@@ -96,6 +96,14 @@ beforeAll(async () => {
   });
   await approveDevicePairing(pending.request.requestId);
   server = await startGatewayServer(gatewayPort);
+});
+
+beforeEach(() => {
+  // installGatewayTestHooks({ scope: "suite" }) resets testState between tests.
+  // Keep auth/env aligned with the already-running suite server to avoid token drift.
+  testState.gatewayAuth = { mode: "token", token: gatewayToken };
+  process.env.OPENCLAW_GATEWAY_PORT = String(gatewayPort);
+  process.env.OPENCLAW_GATEWAY_TOKEN = gatewayToken;
 });
 
 afterAll(async () => {
