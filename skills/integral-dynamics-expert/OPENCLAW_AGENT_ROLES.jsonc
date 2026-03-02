@@ -1,0 +1,70 @@
+{
+  // Merge into your openclaw.json
+  // Goal: corporate teamwork with explicit role ownership.
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "nvidia/minimaxai/minimax-m2.5",
+        "fallbacks": []
+      },
+      "timeoutSeconds": 120
+    },
+    "list": [
+      {
+        "id": "main",
+        "default": true,
+        "name": "CEO Orchestrator",
+        "identity": { "name": "A1-CEO" },
+        "subagents": { "allowAgents": ["growth", "delivery", "finance", "audit"] },
+        "skills": ["integral-dynamics-expert", "healthcheck"],
+        "tools": {
+          "deny": ["exec"],
+          "elevated": { "enabled": false }
+        }
+      },
+      {
+        "id": "growth",
+        "name": "Growth",
+        "identity": { "name": "A1-GROWTH" },
+        "skills": ["integral-dynamics-expert", "gh-issues"],
+        "tools": {
+          "deny": ["exec"],
+          "elevated": { "enabled": false }
+        }
+      },
+      {
+        "id": "delivery",
+        "name": "Delivery",
+        "identity": { "name": "A1-DELIVERY" },
+        "skills": ["integral-dynamics-expert"],
+        "tools": {
+          "elevated": { "enabled": false }
+        }
+      },
+      {
+        "id": "finance",
+        "name": "FinanceRisk",
+        "identity": { "name": "A1-FINANCE" },
+        "skills": ["integral-dynamics-expert"],
+        "tools": {
+          "deny": ["exec", "gateway", "cron"],
+          "elevated": { "enabled": false }
+        }
+      },
+      {
+        "id": "audit",
+        "name": "ComplianceAudit",
+        "identity": { "name": "A1-AUDIT" },
+        "skills": ["integral-dynamics-expert", "healthcheck"],
+        "tools": {
+          "deny": ["exec", "gateway", "cron"],
+          "elevated": { "enabled": false }
+        }
+      }
+    ]
+  },
+  "messages": {
+    "responsePrefix": "[{identity.name}|{model}]"
+  }
+}
+
