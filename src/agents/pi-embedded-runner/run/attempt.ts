@@ -1201,6 +1201,9 @@ export async function runEmbeddedAttempt(
         blockReplyChunking: params.blockReplyChunking,
         onPartialReply: params.onPartialReply,
         onAssistantMessageStart: params.onAssistantMessageStart,
+        onActivity: () => {
+          markRunActivity?.();
+        },
         onAgentEvent: onAgentEventWithActivity,
         enforceFinalTag: params.enforceFinalTag,
         config: params.config,

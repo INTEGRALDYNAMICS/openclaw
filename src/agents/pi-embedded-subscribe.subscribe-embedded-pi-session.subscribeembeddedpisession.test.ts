@@ -265,6 +265,41 @@ describe("subscribeEmbeddedPiSession", () => {
     expect(onReasoningEnd).toHaveBeenCalledTimes(1);
   });
 
+  it("marks activity on raw thinking events even when no assistant agent event is emitted", () => {
+    let handler: ((evt: unknown) => void) | undefined;
+    const session: StubSession = {
+      subscribe: (fn) => {
+        handler = fn;
+        return () => {};
+      },
+    };
+
+    const onActivity = vi.fn();
+    const onAgentEvent = vi.fn();
+
+    subscribeEmbeddedPiSession({
+      session: session as unknown as Parameters<typeof subscribeEmbeddedPiSession>[0]["session"],
+      runId: "run",
+      onActivity,
+      onAgentEvent,
+    });
+
+    handler?.({
+      type: "message_update",
+      message: {
+        role: "assistant",
+        content: [{ type: "thinking", thinking: "Still reasoning" }],
+      },
+      assistantMessageEvent: {
+        type: "thinking_delta",
+        delta: "Still reasoning",
+      },
+    });
+
+    expect(onActivity).toHaveBeenCalledTimes(1);
+    expect(onAgentEvent).not.toHaveBeenCalled();
+  });
+
   it("emits reasoning end once when native and tagged reasoning end overlap", () => {
     let handler: ((evt: unknown) => void) | undefined;
     const session: StubSession = {

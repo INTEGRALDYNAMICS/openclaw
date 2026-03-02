@@ -21,6 +21,10 @@ import type {
 
 export function createEmbeddedPiSessionEventHandler(ctx: EmbeddedPiSubscribeContext) {
   return (evt: EmbeddedPiSubscribeEvent) => {
+    // Treat any raw session event as run activity so idle timeouts do not fire
+    // while provider stream/tool events are still flowing.
+    void ctx.params.onActivity?.();
+
     switch (evt.type) {
       case "message_start":
         handleMessageStart(ctx, evt as never);

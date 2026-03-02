@@ -27,6 +27,11 @@ export type SubscribeEmbeddedPiSessionParams = {
   blockReplyChunking?: BlockReplyChunking;
   onPartialReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
   onAssistantMessageStart?: () => void | Promise<void>;
+  /**
+   * Called for every raw session event handled by the embedded subscriber.
+   * Use this to track liveness/activity even when visible assistant deltas are suppressed.
+   */
+  onActivity?: () => void | Promise<void>;
   onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void | Promise<void>;
   enforceFinalTag?: boolean;
   config?: OpenClawConfig;
