@@ -1,0 +1,12 @@
+{
+  "models": {
+    "defaultProvider": "nvidia",
+    "providers": {
+      "nvidia": {
+        "baseUrl": "https://integrate.api.nvidia.com/v1",
+        "apiKey": "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",
+        "models": [{ "id": "minimaxai/minimax-m2.1", "name": "Minimax 2.1" }]
+      }
+    }
+  }
+}
