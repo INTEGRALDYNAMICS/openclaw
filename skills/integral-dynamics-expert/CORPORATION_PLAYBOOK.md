@@ -48,6 +48,13 @@ If an artifact is missing, the cycle is incomplete.
   - next 30-minute action
 - No cycle can close with "thinking only".
 
+## 5.1) Autonomous loop on A1
+
+- Role agents run isolated periodic ticks and write status into `.swarm_bus/status/`.
+- `main` reads `.swarm_bus/status/*.json` and sends consolidated WhatsApp reports.
+- Keep role-level delivery set to internal/no-deliver to avoid channel noise.
+- Treat stale/missing role status as a reliability incident and report it in the next `main` cycle.
+
 ## 6) Governance rules
 
 - No coercive or deceptive fundraising.

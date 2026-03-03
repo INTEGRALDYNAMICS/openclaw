@@ -55,6 +55,31 @@ For each substantial task, run this flow:
 4. **Verification**: validate against KPI and risk checklist.
 5. **Report**: short status with next move.
 
+## Swarm scheduler protocol (mandatory)
+
+When running in autonomous mode on A1:
+
+1. Keep role ticks isolated (`growth`, `delivery`, `finance`, `audit`, `ops`, `watcher`).
+2. Publish role status snapshots to `IntegralDynamicsProjectFinal/.swarm_bus/status/<role>.json`.
+3. Let `main` consolidate and report to WhatsApp on a shorter cadence.
+4. Never send independent role spam to WhatsApp unless explicitly requested.
+5. If a role tick is stale/missing, escalate in the `main` report with next repair action.
+
+Tool-calling reliability rule (important for minimax):
+
+- For `exec`, always pass explicit JSON arguments with `command`.
+- Example:
+  - `{"command":"/home/ubuntu/projects/IntegralDynamicsProjectFinal/.swarm_bus/bin/role_tick.sh growth"}`
+- If `exec` returns a validation error, retry once with the same argument object.
+
+## WhatsApp operational safety (mandatory)
+
+1. In a direct WhatsApp session, send updates back to the same chat by default.
+2. Do not set an explicit `target` for routine status replies in that DM.
+3. If a different recipient is requested, ask for explicit confirmation first and state the exact destination.
+4. Never send system/internal context to a contact that is not explicitly confirmed by the operator.
+5. If a send fails, report the exact tool error and retry once with corrected arguments.
+
 ## Output contract (every business turn)
 
 Always end with this block:

@@ -1,6 +1,17 @@
 {
   // Merge into your openclaw.json
   // Goal: corporate teamwork with explicit role ownership.
+  "session": {
+    "dmScope": "per-account-channel-peer"
+  },
+  "tools": {
+    "message": {
+      "crossContext": {
+        "allowWithinProvider": false,
+        "allowAcrossProviders": false
+      }
+    }
+  },
   "agents": {
     "defaults": {
       "model": {
@@ -15,10 +26,10 @@
         "default": true,
         "name": "CEO Orchestrator",
         "identity": { "name": "A1-CEO" },
-        "subagents": { "allowAgents": ["growth", "delivery", "finance", "audit"] },
+        "subagents": { "allowAgents": ["growth", "delivery", "finance", "audit", "ops", "watcher"] },
         "skills": ["integral-dynamics-expert", "healthcheck"],
         "tools": {
-          "deny": ["exec"],
+          "deny": [],
           "elevated": { "enabled": false }
         }
       },
@@ -28,7 +39,7 @@
         "identity": { "name": "A1-GROWTH" },
         "skills": ["integral-dynamics-expert", "gh-issues"],
         "tools": {
-          "deny": ["exec"],
+          "deny": [],
           "elevated": { "enabled": false }
         }
       },
@@ -47,7 +58,7 @@
         "identity": { "name": "A1-FINANCE" },
         "skills": ["integral-dynamics-expert"],
         "tools": {
-          "deny": ["exec", "gateway", "cron"],
+          "deny": ["gateway", "cron"],
           "elevated": { "enabled": false }
         }
       },
@@ -57,7 +68,27 @@
         "identity": { "name": "A1-AUDIT" },
         "skills": ["integral-dynamics-expert", "healthcheck"],
         "tools": {
-          "deny": ["exec", "gateway", "cron"],
+          "deny": ["gateway", "cron"],
+          "elevated": { "enabled": false }
+        }
+      },
+      {
+        "id": "ops",
+        "name": "OpsReliability",
+        "identity": { "name": "A1-OPS" },
+        "skills": ["integral-dynamics-expert", "healthcheck"],
+        "tools": {
+          "deny": [],
+          "elevated": { "enabled": false }
+        }
+      },
+      {
+        "id": "watcher",
+        "name": "WatcherObservability",
+        "identity": { "name": "A1-WATCHER" },
+        "skills": ["integral-dynamics-expert", "healthcheck"],
+        "tools": {
+          "deny": [],
           "elevated": { "enabled": false }
         }
       }
@@ -67,4 +98,3 @@
     "responsePrefix": "[{identity.name}|{model}]"
   }
 }
-
