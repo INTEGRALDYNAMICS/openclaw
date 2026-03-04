@@ -3,6 +3,7 @@ import {
   CHANNEL_MESSAGE_ACTION_NAMES,
   type ChannelMessageActionName,
 } from "../channels/plugins/types.js";
+import { resolveSessionAgentId } from "../agents/agent-scope.js";
 import { resolveCommandSecretRefsViaGateway } from "../cli/command-secret-gateway.js";
 import { getChannelsCommandSecretTargetIds } from "../cli/command-secret-targets.js";
 import { createOutboundSendDeps, type CliDeps } from "../cli/outbound-send-deps.js";

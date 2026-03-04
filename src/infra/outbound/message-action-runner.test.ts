@@ -8,6 +8,7 @@ import { whatsappPlugin } from "../../../extensions/whatsapp/src/channel.js";
 import { jsonResult } from "../../agents/tools/common.js";
 import { slackOutbound } from "../../channels/plugins/outbound/slack.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
+import { slackOutbound } from "../../channels/plugins/outbound/slack.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
 import { createOutboundTestPlugin, createTestRegistry } from "../../test-utils/channel-plugins.js";
