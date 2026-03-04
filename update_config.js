@@ -8,8 +8,7 @@ const config = JSON.parse(configStr);
 config.models = config.models || {};
 config.models.providers = config.models.providers || {};
 config.models.providers.nvidia = config.models.providers.nvidia || {};
-config.models.providers.nvidia.apiKey =
-  "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";
+config.models.providers.nvidia.apiKey = "nvapi-REDACTED";
 
 // set default model
 config.agents = config.agents || {};

@@ -1,0 +1,40 @@
+From e2eadaef6cfe0f892e3d613201699fe3bad6a376 Mon Sep 17 00:00:00 2001
+From: qu4ntum <qu4ntum@users.noreply.github.com>
+Date: Sun, 1 Mar 2026 19:14:08 -0300
+Subject: [PATCH 05/10] gateway tests: keep sessions_send auth token stable
+ across suite resets
+
+---
+ src/gateway/server.sessions-send.test.ts | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/src/gateway/server.sessions-send.test.ts b/src/gateway/server.sessions-send.test.ts
+index 7f1e49e8f..a758fe245 100644
+--- a/src/gateway/server.sessions-send.test.ts
++++ b/src/gateway/server.sessions-send.test.ts
+@@ -1,6 +1,6 @@
+ import fs from "node:fs/promises";
+ import path from "node:path";
+-import { afterAll, beforeAll, describe, expect, it, type Mock } from "vitest";
++import { afterAll, beforeAll, beforeEach, describe, expect, it, type Mock } from "vitest";
+ import { resolveSessionTranscriptPath } from "../config/sessions.js";
+ import { emitAgentEvent } from "../infra/agent-events.js";
+ import { captureEnv } from "../test-utils/env.js";
+@@ -98,6 +98,14 @@ beforeAll(async () => {
+   server = await startGatewayServer(gatewayPort);
+ });
+ 
++beforeEach(() => {
++  // installGatewayTestHooks({ scope: "suite" }) resets testState between tests.
++  // Keep auth/env aligned with the already-running suite server to avoid token drift.
++  testState.gatewayAuth = { mode: "token", token: gatewayToken };
++  process.env.OPENCLAW_GATEWAY_PORT = String(gatewayPort);
++  process.env.OPENCLAW_GATEWAY_TOKEN = gatewayToken;
++});
++
+ afterAll(async () => {
+   await server.close();
+   envSnapshot.restore();
+-- 
+2.51.0
+

@@ -1,0 +1,11 @@
+[90m2026-02-18T06:18:54.341Z[39m [36m[gateway][39m [36mforce: no listeners on port 18789[39m
+[90m2026-02-18T06:18:55.676Z[39m [35m[canvas][39m [36mhost mounted at http://127.0.0.1:18789/__openclaw__/canvas/ (root /home/qu4ntum/.openclaw/canvas)[39m
+[90m2026-02-18T06:18:55.722Z[39m [36m[heartbeat][39m [36mstarted[39m
+[90m2026-02-18T06:18:55.728Z[39m [32m[health-monitor][39m [36mstarted (interval: 300s, grace: 60s)[39m
+[90m2026-02-18T06:18:55.731Z[39m [36m[gateway][39m [36magent model: nvidia/minimaxai/minimax-m2.1[39m
+[90m2026-02-18T06:18:55.732Z[39m [36m[gateway][39m [36mlistening on ws://127.0.0.1:18789 (PID 1488837)[39m
+[90m2026-02-18T06:18:55.737Z[39m [36m[gateway][39m [36mlistening on ws://[::1]:18789[39m
+[90m2026-02-18T06:18:55.739Z[39m [36m[gateway][39m [36mlog file: /tmp/openclaw/openclaw-2026-02-18.log[39m
+[90m2026-02-18T06:18:55.749Z[39m [35m[browser/service][39m [36mBrowser control service ready (profiles=2)[39m
+[90m2026-02-18T06:18:56.001Z[39m [36m[ws][39m [33munauthorized conn=90fbda70-42ff-4e2e-aa54-95ca3c8fa0a3 remote=127.0.0.1 client=openclaw-control-ui webchat vdev reason=device_token_mismatch[39m
+[90m2026-02-18T06:18:56.006Z[39m [36m[ws][39m [33mclosed before connect conn=90fbda70-42ff-4e2e-aa54-95ca3c8fa0a3 remote=127.0.0.1 fwd=n/a origin=http://localhost:18789 host=localhost:18789 ua=Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0 code=4008 reason=connect failed[39m

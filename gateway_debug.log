@@ -1,0 +1,5 @@
+
+> openclaw@2026.2.18 start /home/qu4ntum/Escritorio/openclaw
+> node scripts/run-node.mjs gateway --force
+
+2026-02-18T03:18:31.412-03:00 Force: Error: Command failed: /usr/bin/lsof -nP -iTCP:18789 -sTCP:LISTEN -FpFc

@@ -1,0 +1,668 @@
+From d69e2f7e1f61fe4fdd84e1e1775b254226d8c269 Mon Sep 17 00:00:00 2001
+From: qu4ntum <qu4ntum@users.noreply.github.com>
+Date: Mon, 2 Mar 2026 05:33:18 -0300
+Subject: [PATCH 09/10] scripts: add local ops helpers and setup examples
+
+---
+ LANGGRAPH_SETUP_PROMPT.md   | 190 ++++++++++++++++++++++++++++++++++++
+ config/mcporter.json        |  49 ++++++++++
+ fix_config.js               |  14 +++
+ fix_tokens.js               |  15 +++
+ install_searxng.sh          |  68 +++++++++++++
+ n_cuerpos.py                |  86 ++++++++++++++++
+ openclaw-config.json        |  12 +++
+ scripts/nvidia-nim-usage.sh |  38 ++++++++
+ scripts/ollama-autostop.sh  |  32 ++++++
+ scripts/openclaw-backup.sh  |  39 ++++++++
+ update_config.js            |  26 +++++
+ 11 files changed, 569 insertions(+)
+ create mode 100644 LANGGRAPH_SETUP_PROMPT.md
+ create mode 100644 config/mcporter.json
+ create mode 100644 fix_config.js
+ create mode 100644 fix_tokens.js
+ create mode 100644 install_searxng.sh
+ create mode 100644 n_cuerpos.py
+ create mode 100644 openclaw-config.json
+ create mode 100644 scripts/nvidia-nim-usage.sh
+ create mode 100755 scripts/ollama-autostop.sh
+ create mode 100755 scripts/openclaw-backup.sh
+ create mode 100644 update_config.js
+
+diff --git a/LANGGRAPH_SETUP_PROMPT.md b/LANGGRAPH_SETUP_PROMPT.md
+new file mode 100644
+index 000000000..fe74696a5
+--- /dev/null
++++ b/LANGGRAPH_SETUP_PROMPT.md
+@@ -0,0 +1,190 @@
++# Proyecto: Agente Autónomo Real con LangGraph
++
++## La idea
++
++Quiero construir un agente autónomo **de verdad** — no un chatbot con herramientas, no un wrapper de API, no una demo de hackathon. Un sistema que pueda recibir una tarea compleja, descomponerla, ejecutarla paso a paso durante horas o días, recuperarse de fallos, buscar soluciones cuando no sabe algo, y comunicarse conmigo si hay una emergencia real.
++
++Esto no es un proyecto personal cerrado. Tiene que ser **open source y multipropósito**: cualquier persona con una computadora modesta y acceso a modelos gratuitos debe poder levantarlo y tener un agente funcional. La autonomía computacional no es un privilegio de quien paga Claude a $20/mes.
++
++---
++
++## Lo que aprendí rompiendo OpenClaw
++
++Vengo de una sesión de 8 horas auditando OpenClaw v2026.2.23. Lo que descubrí:
++
++### Bugs reales encontrados
++
++- **SSRF guard bloquea localhost**: el agente no podía acceder a SearXNG local porque `ssrf.ts` bloquea `localhost` como IP privada. Fix: agregar `browser.ssrfPolicy.allowedHostnames: ["localhost"]`
++- **Mem0 crashea con `<think>` tags**: MiniMax M2.1 genera `<think>...</think>` en respuestas JSON internas. El plugin `mem0ai@2.2.1` hace `JSON.parse()` directo y explota con `SyntaxError: Unexpected token '<'`
++- **Mezcla de idiomas**: MiniMax escribió `comunicación和工作 language` (español + chino) en un JSON interno
++- **`text.replace is not a function`**: bug upstream en el plugin de Mem0 — recibe un objeto donde espera un string
++- **Subagentes fallan silenciosamente**: timeouts 4/4, tools invocados sin parámetros (`read` sin `path`), sin logging visible para el usuario
++- **Sin auto-failover**: si el modelo principal cae, el agente se queda colgado. No hay retry con otro modelo
++- **Sesiones efímeras**: cada conversación muere al terminar. No hay persistencia de tareas entre sesiones
++
++### Modelos testeados en NVIDIA NIM (gratis)
++
++| Modelo                                | Think tags | JSON limpio   | Veredicto               |
++| ------------------------------------- | ---------- | ------------- | ----------------------- |
++| `deepseek-ai/deepseek-v3.2`           | ❌ NO      | ✅ SÍ         | **MEJOR opción gratis** |
++| `meta/llama-3.3-70b-instruct`         | ❌ NO      | ✅ SÍ         | Buen fallback           |
++| `minimaxai/minimax-m2.1`              | ✅ SÍ      | ❌ NO         | Roto para tool calling  |
++| `nvidia/llama-3.3-nemotron-super-49b` | ✅ SÍ      | ❌ NO         | Think tags en JSON      |
++| `qwen/qwen3-235b-a22b`                | —          | Error/timeout | No disponible           |
++
++### Conclusión
++
++OpenClaw es un **asistente reactivo disfrazado de agente autónomo**. Sirve para chat + tools manuales, pero no tiene persistencia real, no se recupera de fallos, y la "autonomía" es 90% marketing.
++
++---
++
++## Principios de diseño del nuevo sistema
++
++### 1. Model-agnostic de verdad
++
++Tiene que funcionar desde el modelo más chiquito (Llama 3.2 3B en una notebook) hasta el más grande (DeepSeek V3.2 685B en la nube). La arquitectura no puede asumir que el modelo es inteligente — tiene que compensar las limitaciones del modelo con estructura, prompts adaptativos, y validación de outputs.
++
++Si un modelo chico no puede hacer tool calling nativo, el sistema tiene que **parsear texto libre** y extraer las intenciones. Si un modelo grande puede hacer structured output, que lo use. La inteligencia está en el grafo, no solo en el modelo.
++
++### 2. Resourcefulness (ingeniárselas)
++
++Si el agente no sabe cómo hacer algo, no se queda parado. Tiene que:
++
++- **Buscar cómo hacerlo**: consultar SearXNG, leer documentación, buscar ejemplos
++- **Aprender skills dinámicamente**: si necesita generar una imagen y no tiene tool, buscar una API gratuita, probarla, y usarla
++- **Escalar al humano cuando es necesario**: si todo falla, notificar al usuario por el canal más efectivo disponible
++
++### 3. Comunicación de emergencia
++
++Si el agente detecta una situación crítica (un proceso destruyendo archivos, un servicio caído que necesita atención urgente, un deadline que se pasa), tiene que poder:
++
++- Mandar notificación por terminal/desktop
++- Si tiene mi número y acceso a una API de TTS + llamadas VoIP gratuita (ej: Twilio free tier, o Google Cloud TTS + SIP), **llamarme al celular** y decirme qué pasa con voz sintetizada
++- Si no tiene cómo llamar, mandar mail, webhook, lo que sea — **encontrar la forma**
++
++### 4. Interfaz
++
++No es un script de terminal que escupe logs. Necesita una interfaz:
++
++- **Web dashboard** liviana (FastAPI + HTMX, o similar — sin frameworks pesados de JS)
++- Visualización del grafo en tiempo real: qué nodo se está ejecutando, cuál completó, cuál falló
++- Timeline de eventos: cada tool call, cada decisión, cada error — todo visible
++- Control: poder pausar, resumir, cancelar, y forzar re-ejecución de un nodo
++- Estado de los modelos: cuál está activo, latencia, rate limits restantes
++
++### 5. Persistencia real
++
++- **Checkpointing SQLite**: el estado completo del grafo se guarda en cada transición
++- **Resume**: si se cae la luz, el proceso, o el modelo, retoma exactamente donde quedó
++- **Memoria entre sesiones**: un SQLite separado con hechos aprendidos del usuario y del contexto, sin depender de plugins npm rotos
++- **Time-travel**: poder volver a cualquier paso anterior, ver qué datos tenía, y re-ejecutar desde ahí
++
++### 6. Auto-failover de modelos
++
++```
++Intento 1: deepseek-ai/deepseek-v3.2 (NVIDIA NIM)
++  ↓ timeout/rate-limit/error
++Intento 2: meta/llama-3.3-70b-instruct (NVIDIA NIM)
++  ↓ timeout/rate-limit/error
++Intento 3: modelo local via Ollama (si hay uno cargado)
++  ↓ todo falló
++Acción: notificar al usuario, pausar tarea, guardar checkpoint
++```
++
++---
++
++## Infraestructura disponible
++
++### Hardware
++
++```
++CPU:       AMD Ryzen 7 5700U (8c/16t, sin GPU dedicada)
++RAM:       16GB DDR4
++Disco:     SSD
++SO:        Arch Linux (systemd, pacman)
++Red:       Internet domiciliaria estándar
++```
++
++### Servicios locales funcionando
++
++| Servicio | Puerto                 | Función                                      |
++| -------- | ---------------------- | -------------------------------------------- |
++| SearXNG  | http://localhost:8080  | Meta search engine local, API JSON           |
++| Ollama   | http://127.0.0.1:11434 | Embeddings (mxbai-embed-large, 1024 dims)    |
++| OpenClaw | http://127.0.0.1:18789 | Asistente reactivo (coexiste, no reemplazar) |
++
++### APIs gratuitas
++
++```
++NVIDIA NIM:
++  URL:     https://integrate.api.nvidia.com/v1
++  Key:     nvapi-REDACTED
++  Format:  OpenAI-compatible
++  Modelos: deepseek-v3.2 (principal), llama-3.3-70b (fallback)
++  Límite:  ~40 req/min
++```
++
++### Herramientas del sistema
++
++- Python 3.x (pacman, usar venv)
++- pnpm (para frontend si hace falta)
++- Git
++- Neovim
++- Brave Browser
++
++---
++
++## Restricciones absolutas
++
++1. **CERO costos** — solo APIs gratis y modelos locales
++2. **Sin Docker** — Python venv directo (mi máquina no tiene RAM de sobra para containers)
++3. **Sin frameworks JS pesados** — nada de React/Next.js/Vue para la interfaz. HTMX, Alpine.js, o vanilla JS máximo
++4. **Código legible y documentado** — esto se publica open source
++5. **Español argentino** en toda la interfaz y comunicación del agente
++6. **No depender de un solo modelo ni proveedor** — tiene que sobrevivir si NVIDIA NIM se cae mañana
++
++---
++
++## Test de validación (definición de "funciona")
++
++### Test 1: Tarea multi-step con checkpointing
++
++> "Investigá las diferencias entre State Space Models y Transformers. Armá un análisis técnico y guardalo en un archivo. Si se te corta internet a mitad, que pueda retomar."
++
++Debe: buscar en SearXNG → analizar → escribir archivo → checkpoint en cada paso → poder resumir si se interrumpe.
++
++### Test 2: Auto-failover de modelo
++
++Desconectar NVIDIA NIM a mitad de tarea. El agente debe detectar el error, cambiar a Ollama local o al modelo fallback, y continuar.
++
++### Test 3: Resourcefulness
++
++> "Generame un diagrama de flujo de la arquitectura y guardalo como imagen."
++
++El agente NO tiene tool de generación de imágenes. Debe: buscar cómo generar diagramas programáticamente → encontrar Mermaid/Graphviz/etc → instalarlo → generar el diagrama → guardarlo.
++
++### Test 4: Comunicación de emergencia
++
++Simular un proceso que está borrando archivos importantes. El agente debe: detectar la anomalía → intentar frenar el proceso → notificar al usuario por el medio más efectivo disponible.
++
++---
++
++## Lo que NO es este proyecto
++
++- No es otro wrapper de ChatGPT
++- No es un juguete de hackathon
++- No es una demo que funciona solo en el video de YouTube
++- No es exclusivo para programadores — tiene que tener interfaz
++
++**Es un sistema autónomo real que se las ingenia con lo que tiene, aprende de sus errores, y sirve para cualquier persona. Open source. Gratis. Multipropósito.**
++
++---
++
++## Contexto personal
++
++Mi nombre de usuario es qu4ntum. Trabajo en proyectos de IA independientes:
++
++- **ConciencIA**: motor de inferencia en C puro para modelos Qwen (reemplazo de PyTorch)
++- **Integral Dynamics**: investigación en procesos transformadores universales
++
++Prefiero Rust > Python para proyectos nuevos. Uso pnpm > npm. Mi API de NVIDIA NIM vence el 15/03/2026. Siempre hablame en español argentino.
+diff --git a/config/mcporter.json b/config/mcporter.json
+new file mode 100644
+index 000000000..c5c538cea
+--- /dev/null
++++ b/config/mcporter.json
+@@ -0,0 +1,49 @@
++{
++  "mcpServers": {
++    "filesystem": {
++      "command": "npx",
++      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/qu4ntum/Escritorio/openclaw"]
++    },
++    "github": {
++      "command": "npx",
++      "args": ["-y", "@modelcontextprotocol/server-github"],
++      "env": {
++        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_TOKEN>"
++      }
++    },
++    "brave-search": {
++      "command": "npx",
++      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
++      "env": {
++        "BRAVE_API_KEY": "<YOUR_BRAVE_API_KEY>"
++      }
++    },
++    "google-maps": {
++      "command": "npx",
++      "args": ["-y", "@modelcontextprotocol/server-google-maps"],
++      "env": {
++        "GOOGLE_MAPS_API_KEY": "<YOUR_GOOGLE_MAPS_API_KEY>"
++      }
++    },
++    "slack": {
++      "command": "npx",
++      "args": ["-y", "@modelcontextprotocol/server-slack"],
++      "env": {
++        "SLACK_BOT_TOKEN": "<YOUR_SLACK_BOT_TOKEN>",
++        "SLACK_TEAM_ID": "<YOUR_SLACK_TEAM_ID>"
++      }
++    },
++    "memory": {
++      "command": "npx",
++      "args": ["-y", "@modelcontextprotocol/server-memory"]
++    },
++    "postgres": {
++      "command": "npx",
++      "args": [
++        "-y",
++        "@modelcontextprotocol/server-postgresql",
++        "postgresql://user:password@localhost:5432/dbname"
++      ]
++    }
++  }
++}
+diff --git a/fix_config.js b/fix_config.js
+new file mode 100644
+index 000000000..273dd01b0
+--- /dev/null
++++ b/fix_config.js
+@@ -0,0 +1,14 @@
++import fs from "fs";
++
++const configPath = process.env.HOME + "/.openclaw/openclaw.json";
++const configStr = fs.readFileSync(configPath, "utf8");
++const config = JSON.parse(configStr);
++
++config.models.providers.nvidia.baseUrl = "https://integrate.api.nvidia.com/v1";
++config.models.providers.nvidia.models = [
++  { id: "minimaxai/minimax-m2.1", name: "Minimax 2.1" },
++  { id: "qwen/qwen3.5-397b-a17b", name: "Qwen 3.5 397B" },
++];
++
++fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
++console.log("Config fixed");
+diff --git a/fix_tokens.js b/fix_tokens.js
+new file mode 100644
+index 000000000..5f64df6fa
+--- /dev/null
++++ b/fix_tokens.js
+@@ -0,0 +1,15 @@
++import fs from "fs";
++
++const configPath = process.env.HOME + "/.openclaw/openclaw.json";
++const configStr = fs.readFileSync(configPath, "utf8");
++const config = JSON.parse(configStr);
++
++const token = config.gateway?.auth?.token || "1a7a1ea49d4cfc5687ab8c699937f1e591f28483f21bb9c1";
++config.gateway = config.gateway || {};
++config.gateway.auth = config.gateway.auth || {};
++config.gateway.auth.token = token;
++config.gateway.remote = config.gateway.remote || {};
++config.gateway.remote.token = token;
++
++fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
++console.log("Tokens synced to: " + token);
+diff --git a/install_searxng.sh b/install_searxng.sh
+new file mode 100644
+index 000000000..10f58f311
+--- /dev/null
++++ b/install_searxng.sh
+@@ -0,0 +1,68 @@
++#!/usr/bin/env bash
++# install_searxng.sh — Instala y corre SearXNG sin Docker
++# Uso: bash install_searxng.sh
++# Luego: bash ~/.local/searxng/run_searxng.sh
++
++set -e
++
++SEARXNG_DIR="$HOME/.local/searxng"
++PORT=8080
++
++echo "=== Instalando SearXNG (sin Docker) ==="
++
++# 1. Dependencias Python
++echo "[1/4] Verificando dependencias..."
++python3 -m pip install --user virtualenv 2>/dev/null || true
++
++# 2. Crear virtualenv y clonar
++mkdir -p "$SEARXNG_DIR"
++if [ ! -d "$SEARXNG_DIR/venv" ]; then
++  python3 -m venv "$SEARXNG_DIR/venv"
++fi
++
++# 3. Instalar SearXNG
++echo "[2/4] Instalando SearXNG en virtualenv..."
++source "$SEARXNG_DIR/venv/bin/activate"
++pip install --quiet searxng 2>&1 | tail -3 || {
++  echo "  → pip install searxng falló, clonando desde git..."
++  git clone --depth=1 https://github.com/searxng/searxng.git "$SEARXNG_DIR/repo" 2>/dev/null || \
++    (cd "$SEARXNG_DIR/repo" && git pull)
++  pip install --quiet -e "$SEARXNG_DIR/repo"
++}
++
++# 4. Config con JSON habilitado
++echo "[3/4] Creando configuración..."
++mkdir -p "$SEARXNG_DIR/conf"
++cat > "$SEARXNG_DIR/conf/settings.yml" << 'YAML'
++use_default_settings: true
++server:
++  secret_key: "openclaw-searxng-local-secret"
++  bind_address: "127.0.0.1"
++  port: 8080
++  public_instance: false
++search:
++  formats:
++    - html
++    - json
++YAML
++
++# 5. Script de arranque
++echo "[4/4] Creando script de arranque..."
++cat > "$SEARXNG_DIR/run_searxng.sh" << SCRIPT
++#!/usr/bin/env bash
++source "$SEARXNG_DIR/venv/bin/activate"
++export SEARXNG_SETTINGS_PATH="$SEARXNG_DIR/conf/settings.yml"
++cd "$SEARXNG_DIR"
++echo "🔍 SearXNG corriendo en http://localhost:${PORT}"
++echo "   Presiona Ctrl+C para detener"
++python3 -m searx.webapp 2>&1 | grep -v DEBUG
++SCRIPT
++chmod +x "$SEARXNG_DIR/run_searxng.sh"
++
++echo ""
++echo "✅ Instalación completa!"
++echo "   Inicia SearXNG con: bash ~/.local/searxng/run_searxng.sh"
++echo "   O en background:    bash ~/.local/searxng/run_searxng.sh &"
++echo ""
++echo "   Verifica que funciona:"
++echo "   curl -s 'http://localhost:8080/search?q=test&format=json' | python3 -c \"import json,sys; print(len(json.load(sys.stdin).get('results',[])), 'results')\""
+diff --git a/n_cuerpos.py b/n_cuerpos.py
+new file mode 100644
+index 000000000..a804a1e9b
+--- /dev/null
++++ b/n_cuerpos.py
+@@ -0,0 +1,86 @@
++
++import numpy as np
++import matplotlib.pyplot as plt
++from matplotlib.animation import FuncAnimation
++from mpl_toolkits.mplot3d import Axes3D
++
++# --- Configuración ---
++N_BODIES = 5
++STEPS = 300
++DT = 0.05
++G = 1.0
++SOFTENING = 0.1
++TRAIL_LEN = 50
++OUTPUT_FILE = 'n_body_simulation.mp4'
++FPS = 30
++
++# --- Inicialización ---
++np.random.seed(42)
++masses = np.random.uniform(1.0, 5.0, N_BODIES)
++positions = np.random.uniform(-5, 5, (N_BODIES, 3))
++velocities = np.random.uniform(-1, 1, (N_BODIES, 3))
++
++# Historial de posiciones
++history = np.zeros((STEPS, N_BODIES, 3))
++
++def get_accelerations(pos, masses):
++    """Calcula aceleraciones gravitacionales vectorizado."""
++    n = len(masses)
++    acc = np.zeros((n, 3))
++    for i in range(n):
++        diff = pos - pos[i]
++        dist_sq = np.sum(diff**2, axis=1) + SOFTENING**2
++        dist_sqrt = np.sqrt(dist_sq)
++        # Evitar división por cero con softening
++        acc[i] = np.sum((G * masses[:, None] * diff / dist_sqrt[:, None]) / dist_sq[:, None], axis=0)
++    return acc
++
++def simulate():
++    """Ejecuta la integración de Verlet y guarda historial."""
++    global positions, velocities
++    acc = get_accelerations(positions, masses)
++    
++    for i in range(STEPS):
++        # Verlet Step
++        pos_new = positions + velocities * DT + 0.5 * acc * DT**2
++        acc_new = get_accelerations(pos_new, masses)
++        velocities = velocities + 0.5 * (acc + acc_new) * DT
++        positions = pos_new
++        acc = acc_new
++        history[i] = positions
++
++def update(frame):
++    """Actualiza la animación."""
++    ax.clear()
++    ax.set_xlim(-10, 10)
++    ax.set_ylim(-10, 10)
++    ax.set_zlim(-10, 10)
++    ax.set_title(f"N-Body Simulation (Verlet) - Step {frame}/{STEPS}")
++    ax.set_xlabel("X")
++    ax.set_ylabel("Y")
++    ax.set_zlabel("Z")
++    
++    # Dibujar estelas y cuerpos
++    for i in range(N_BODIES):
++        start_idx = max(0, frame - TRAIL_LEN)
++        trail = history[start_idx:frame+1, i, :]
++        if len(trail) > 1:
++            ax.plot(trail[:, 0], trail[:, 1], trail[:, 2], alpha=0.4, linewidth=1.5)
++        
++        ax.scatter(history[frame, i, 0], history[frame, i, 1], history[frame, i, 2], 
++                   s=masses[i]*10, color=plt.cm.viridis(i/N_BODIES), depthshade=True)
++
++if __name__ == "__main__":
++    print("Iniciando simulación...")
++    simulate()
++    
++    print("Generando animación...")
++    fig = plt.figure(figsize=(10, 8))
++    ax = fig.add_subplot(111, projection='3d')
++    
++    anim = FuncAnimation(fig, update, frames=STEPS, interval=20)
++    
++    print(f"Guardando video en: {OUTPUT_FILE}")
++    anim.save(OUTPUT_FILE, writer='ffmpeg', fps=FPS)
++    plt.close()
++    print("Completado.")
+diff --git a/openclaw-config.json b/openclaw-config.json
+new file mode 100644
+index 000000000..e0f4f4194
+--- /dev/null
++++ b/openclaw-config.json
+@@ -0,0 +1,12 @@
++{
++  "models": {
++    "defaultProvider": "nvidia",
++    "providers": {
++      "nvidia": {
++        "baseUrl": "https://integrate.api.nvidia.com/v1",
++        "apiKey": "nvapi-REDACTED",
++        "models": [{ "id": "minimaxai/minimax-m2.1", "name": "Minimax 2.1" }]
++      }
++    }
++  }
++}
+diff --git a/scripts/nvidia-nim-usage.sh b/scripts/nvidia-nim-usage.sh
+new file mode 100644
+index 000000000..93f4a71ac
+--- /dev/null
++++ b/scripts/nvidia-nim-usage.sh
+@@ -0,0 +1,38 @@
++#!/bin/bash
++# nvidia-nim-usage.sh — Monitor de uso de tokens NVIDIA NIM
++# Uso: bash nvidia-nim-usage.sh
++
++API_KEY="nvapi-REDACTED"
++
++echo "📊 NVIDIA NIM — Monitor de uso"
++echo "================================"
++echo ""
++
++# Check API status
++HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
++  -H "Authorization: Bearer $API_KEY" \
++  "https://integrate.api.nvidia.com/v1/models")
++
++if [ "$HTTP_CODE" = "200" ]; then
++    echo "✅ API Status: OK (HTTP $HTTP_CODE)"
++    echo ""
++    echo "📋 Modelos disponibles:"
++    curl -s -H "Authorization: Bearer $API_KEY" \
++      "https://integrate.api.nvidia.com/v1/models" 2>/dev/null | \
++      python3 -c "
++import json,sys
++try:
++    d = json.load(sys.stdin)
++    for m in d.get('data',[]):
++        print(f'  - {m[\"id\"]}')
++except: print('  (no se pudo parsear)')
++"
++else
++    echo "❌ API Status: Error (HTTP $HTTP_CODE)"
++fi
++
++echo ""
++echo "💡 NVIDIA NIM Free Tier:"
++echo "  - Rate limit: ~40 req/min per model"
++echo "  - No monthly token cap (pero puede cambiar)"
++echo "  - Si falla MiniMax, usá: /model meta/llama-3.3-70b-instruct"
+diff --git a/scripts/ollama-autostop.sh b/scripts/ollama-autostop.sh
+new file mode 100755
+index 000000000..d5e33deaf
+--- /dev/null
++++ b/scripts/ollama-autostop.sh
+@@ -0,0 +1,32 @@
++#!/bin/bash
++# ollama-autostop.sh — Para Ollama si está idle más de IDLE_MINS minutos
++# Uso: ./ollama-autostop.sh [minutos_idle]
++
++IDLE_MINS=${1:-10}
++OLLAMA_LOG="/tmp/ollama-last-request.txt"
++
++# Si Ollama no está corriendo, salir sin error
++if ! pgrep -f "ollama" > /dev/null 2>&1; then
++    exit 0
++fi
++
++# Verificar último request via API
++LAST_ACTIVE=$(curl -s --max-time 2 http://127.0.0.1:11434/api/tags > /dev/null 2>&1 && echo $(date +%s) || echo 0)
++
++# Leer timestamp del último uso guardado
++if [ -f "$OLLAMA_LOG" ]; then
++    LAST_SAVED=$(cat "$OLLAMA_LOG")
++else
++    echo $(date +%s) > "$OLLAMA_LOG"
++    exit 0
++fi
++
++NOW=$(date +%s)
++IDLE_SECS=$((IDLE_MINS * 60))
++ELAPSED=$((NOW - LAST_SAVED))
++
++if [ "$ELAPSED" -gt "$IDLE_SECS" ]; then
++    echo "$(date): Ollama idle por ${ELAPSED}s, deteniendo..."
++    systemctl --user stop ollama 2>/dev/null || pkill -f "ollama serve" 2>/dev/null
++    rm -f "$OLLAMA_LOG"
++fi
+diff --git a/scripts/openclaw-backup.sh b/scripts/openclaw-backup.sh
+new file mode 100755
+index 000000000..110133595
+--- /dev/null
++++ b/scripts/openclaw-backup.sh
+@@ -0,0 +1,39 @@
++#!/bin/bash
++# openclaw-backup.sh — Backup de config y memorias a Git
++# Ejecutar con cron: 0 */6 * * * /ruta/openclaw-backup.sh
++
++BACKUP_DIR="/home/qu4ntum/.openclaw-backup"
++OPENCLAW_DIR="/home/qu4ntum/.openclaw"
++DATE=$(date +%Y%m%d_%H%M%S)
++
++mkdir -p "$BACKUP_DIR"
++
++# Inicializar repo si no existe
++if [ ! -d "$BACKUP_DIR/.git" ]; then
++    git -C "$BACKUP_DIR" init
++    git -C "$BACKUP_DIR" config user.email "qu4ntum@arcadia"
++    git -C "$BACKUP_DIR" config user.name "qu4ntum"
++fi
++
++# Copiar archivos importantes (sin datos sensibles como API keys en logs)
++cp "$OPENCLAW_DIR/openclaw.json" "$BACKUP_DIR/openclaw.json" 2>/dev/null
++cp "$OPENCLAW_DIR/cron/jobs.json" "$BACKUP_DIR/cron-jobs.json" 2>/dev/null
++cp "$OPENCLAW_DIR/workspace/MEMORY.md" "$BACKUP_DIR/MEMORY.md" 2>/dev/null
++
++# Backup del historial SQLite de Mem0 (las memorias reales)
++if [ -f "$OPENCLAW_DIR/memory/mem0-history.sqlite" ]; then
++    cp "$OPENCLAW_DIR/memory/mem0-history.sqlite" "$BACKUP_DIR/mem0-history.sqlite"
++fi
++
++# Commit
++cd "$BACKUP_DIR"
++git add -A
++git diff --staged --quiet || git commit -m "backup: $DATE"
++
++# Si hay remote configurado, push
++if git remote | grep -q "origin"; then
++    git push origin main --quiet && echo "$(date): Backup pusheado a GitHub" || echo "$(date): Push falló (sin internet?)"
++else
++    echo "$(date): Backup local guardado en $BACKUP_DIR"
++    echo "Para pushear a GitHub: git -C $BACKUP_DIR remote add origin https://github.com/TU_USER/openclaw-backup"
++fi
+diff --git a/update_config.js b/update_config.js
+new file mode 100644
+index 000000000..d0d96022b
+--- /dev/null
++++ b/update_config.js
+@@ -0,0 +1,26 @@
++import fs from "fs";
++
++const configPath = process.env.HOME + "/.openclaw/openclaw.json";
++const configStr = fs.readFileSync(configPath, "utf8");
++const config = JSON.parse(configStr);
++
++// add nvidia api key
++config.models = config.models || {};
++config.models.providers = config.models.providers || {};
++config.models.providers.nvidia = config.models.providers.nvidia || {};
++config.models.providers.nvidia.apiKey =
++  "nvapi-REDACTED";
++
++// set default model
++config.agents = config.agents || {};
++config.agents.defaults = config.agents.defaults || {};
++config.agents.defaults.model = config.agents.defaults.model || {};
++config.agents.defaults.model.primary = "nvidia/minimaxai/minimax-m2.1";
++
++// make sure both are populated
++config.agents.defaults.models = config.agents.defaults.models || {};
++config.agents.defaults.models["nvidia/minimaxai/minimax-m2.1"] = {};
++config.agents.defaults.models["nvidia/qwen/qwen3.5-397b-a17b"] = {};
++
++fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
++console.log("Config updated");
+-- 
+2.51.0
+

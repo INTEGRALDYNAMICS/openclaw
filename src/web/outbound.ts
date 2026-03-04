@@ -1,3 +1,4 @@
+import path from "node:path";
 import { loadConfig } from "../config/config.js";
 import { resolveMarkdownTableMode } from "../config/markdown-tables.js";
 import { generateSecureUuid } from "../infra/secure-random.js";
@@ -6,12 +7,52 @@ import { redactIdentifier } from "../logging/redact-identifier.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { convertMarkdownTables } from "../markdown/tables.js";
 import { markdownToWhatsApp } from "../markdown/whatsapp.js";
+import { maxBytesForKind } from "../media/constants.js";
+import { optimizeImageToPng } from "../media/image-ops.js";
 import { normalizePollInput, type PollInput } from "../polls.js";
 import { toWhatsappJid } from "../utils.js";
 import { type ActiveWebSendOptions, requireActiveWebListener } from "./active-listener.js";
 import { loadWebMedia } from "./media.js";
 
 const outboundLog = createSubsystemLogger("gateway/channels/whatsapp").child("outbound");
+
+const WHATSAPP_NATIVE_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+]);
+
+const IMAGE_EXT_REQUIRES_PNG_TRANSCODE = new Set([
+  ".svg",
+  ".avif",
+  ".bmp",
+  ".heic",
+  ".heif",
+  ".tif",
+  ".tiff",
+]);
+
+function normalizeMime(mime?: string): string | undefined {
+  const normalized = mime?.split(";")[0]?.trim().toLowerCase();
+  return normalized || undefined;
+}
+
+function shouldTranscodeToPngForWhatsAppImage(params: {
+  kind: string;
+  contentType?: string;
+  fileName?: string;
+}): boolean {
+  const mime = normalizeMime(params.contentType);
+  if (mime?.startsWith("image/")) {
+    return !WHATSAPP_NATIVE_IMAGE_MIME_TYPES.has(mime);
+  }
+  if (params.kind !== "image" && params.kind !== "unknown") {
+    return false;
+  }
+  const ext = path.extname(params.fileName ?? "").toLowerCase();
+  return IMAGE_EXT_REQUIRES_PNG_TRANSCODE.has(ext);
+}
 
 export async function sendMessageWhatsApp(
   to: string,
@@ -55,8 +96,32 @@ export async function sendMessageWhatsApp(
         localRoots: options.mediaLocalRoots,
       });
       const caption = text || undefined;
-      mediaBuffer = media.buffer;
-      mediaType = media.contentType;
+      const shouldTranscodeToPng = shouldTranscodeToPngForWhatsAppImage({
+        kind: media.kind,
+        contentType: media.contentType,
+        fileName: media.fileName,
+      });
+
+      if (shouldTranscodeToPng) {
+        try {
+          const optimized = await optimizeImageToPng(media.buffer, maxBytesForKind("image"));
+          mediaBuffer = optimized.buffer;
+          mediaType = "image/png";
+          text = caption ?? "";
+        } catch (err) {
+          logger.warn(
+            { err: String(err), fileName: media.fileName, mediaType: media.contentType },
+            "failed to transcode image to png; falling back to original payload",
+          );
+          mediaBuffer = media.buffer;
+          mediaType = media.contentType ?? "application/octet-stream";
+        }
+      } else {
+        mediaBuffer = media.buffer;
+        // Some local files may not produce a sniffed MIME.
+        mediaType = media.contentType ?? "application/octet-stream";
+      }
+
       if (media.kind === "audio") {
         // WhatsApp expects explicit opus codec for PTT voice notes.
         mediaType =
@@ -65,7 +130,7 @@ export async function sendMessageWhatsApp(
             : (media.contentType ?? "application/octet-stream");
       } else if (media.kind === "video") {
         text = caption ?? "";
-      } else if (media.kind === "image") {
+      } else if (media.kind === "image" || shouldTranscodeToPng) {
         text = caption ?? "";
       } else {
         text = caption ?? "";

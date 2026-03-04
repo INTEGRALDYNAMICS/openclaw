@@ -6,6 +6,7 @@ import { slackPlugin } from "../../../extensions/slack/src/channel.js";
 import { telegramPlugin } from "../../../extensions/telegram/src/channel.js";
 import { whatsappPlugin } from "../../../extensions/whatsapp/src/channel.js";
 import { jsonResult } from "../../agents/tools/common.js";
+import { slackOutbound } from "../../channels/plugins/outbound/slack.js";
 import type { ChannelPlugin } from "../../channels/plugins/types.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import { setActivePluginRegistry } from "../../plugins/runtime.js";
@@ -322,6 +323,50 @@ describe("runMessageAction context isolation", () => {
     });
 
     expect(result.kind).toBe("send");
+  });
+
+  it("propagates sandbox roots to outbound media options", async () => {
+    await withSandbox(async (sandboxDir) => {
+      const mediaPath = path.join(sandboxDir, "reports", "logo.svg");
+      await fs.mkdir(path.dirname(mediaPath), { recursive: true });
+      await fs.writeFile(mediaPath, "<svg/>", "utf8");
+
+      setActivePluginRegistry(
+        createTestRegistry([
+          {
+            pluginId: "slack",
+            source: "test",
+            plugin: createOutboundTestPlugin({
+              id: "slack",
+              outbound: slackOutbound,
+            }),
+          },
+        ]),
+      );
+
+      const sendSlack = vi.fn().mockResolvedValue({ messageId: "s1", channelId: "C12345678" });
+      const result = await runMessageAction({
+        cfg: slackConfig,
+        action: "send",
+        params: {
+          channel: "slack",
+          target: "#C12345678",
+          message: "logo",
+          media: mediaPath,
+        },
+        sandboxRoot: sandboxDir,
+        deps: { sendSlack },
+      });
+
+      expect(result.kind).toBe("send");
+      expect(sendSlack).toHaveBeenCalledTimes(1);
+      expect(sendSlack.mock.calls[0]?.[2]).toEqual(
+        expect.objectContaining({
+          mediaUrl: mediaPath,
+          mediaLocalRoots: expect.arrayContaining([sandboxDir]),
+        }),
+      );
+    });
   });
 
   it("infers channel + target from tool context when missing", async () => {

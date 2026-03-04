@@ -64,9 +64,9 @@ function resolveToolErrorWarningPolicy(params: {
     return { showWarning: false, includeDetails };
   }
   const normalizedToolName = params.lastToolError.toolName.trim().toLowerCase();
-  if ((normalizedToolName === "exec" || normalizedToolName === "bash") && !includeDetails) {
-    return { showWarning: false, includeDetails };
-  }
+  // Exec/bash failures were historically suppressed in non-verbose mode to reduce noise.
+  // In practice this hid malformed/missing tool arguments and made autonomous loops opaque.
+  // Keep details gated by verbose level, but always emit the warning when policy allows.
   // sessions_send timeouts and errors are transient inter-session communication
   // issues — the message may still have been delivered. Suppress warnings to
   // prevent raw error text from leaking into the chat surface (#23989).

@@ -1,0 +1,10 @@
+63dcb61c5 assets: add legacy design previews and simulation sample
+d69e2f7e1 scripts: add local ops helpers and setup examples
+ed0579487 skills: add autonomous identity and channel skill packs
+9345017cf skills: add integral dynamics corporation playbook
+5ba725511 agents: keep embedded run timeout alive on stream activity
+e2eadaef6 gateway tests: keep sessions_send auth token stable across suite resets
+7acd0ad99 agent: fix stream-idle timeout config + gateway token drift check
+997bc4469 Gateway: prefer config auth over env for local CLI calls
+2770f59e2 build: harden a2ui bundle pnpm invocation
+ad95466b7 ui: fix new session wiring and typing

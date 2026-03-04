@@ -12,6 +12,11 @@ vi.mock("./media.js", () => ({
   loadWebMedia: (...args: unknown[]) => loadWebMediaMock(...args),
 }));
 
+const optimizeImageToPngMock = vi.fn();
+vi.mock("../media/image-ops.js", () => ({
+  optimizeImageToPng: (...args: unknown[]) => optimizeImageToPngMock(...args),
+}));
+
 import { sendMessageWhatsApp, sendPollWhatsApp, sendReactionWhatsApp } from "./outbound.js";
 
 describe("web outbound", () => {
@@ -22,6 +27,12 @@ describe("web outbound", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    optimizeImageToPngMock.mockResolvedValue({
+      buffer: Buffer.from("png"),
+      optimizedSize: 3,
+      resizeSide: 1024,
+      compressionLevel: 6,
+    });
     setActiveWebListener({
       sendComposingTo,
       sendMessage,
@@ -138,6 +149,44 @@ describe("web outbound", () => {
     expect(sendMessage).toHaveBeenLastCalledWith("+1555", "doc", buf, "application/pdf", {
       fileName: "file.pdf",
     });
+  });
+
+  it("transcodes svg-like image payloads to png for whatsapp", async () => {
+    const buf = Buffer.from("<svg />");
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: buf,
+      kind: "unknown",
+      fileName: "logo.svg",
+    });
+    await sendMessageWhatsApp("+1555", "logo", {
+      verbose: false,
+      mediaUrl: "/tmp/logo.svg",
+    });
+    expect(optimizeImageToPngMock).toHaveBeenCalledWith(buf, expect.any(Number));
+    expect(sendMessage).toHaveBeenLastCalledWith("+1555", "logo", Buffer.from("png"), "image/png");
+  });
+
+  it("falls back to document MIME when media type is unknown and not image-like", async () => {
+    const buf = Buffer.from("binary");
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: buf,
+      kind: "unknown",
+      fileName: "artifact.bin",
+    });
+    await sendMessageWhatsApp("+1555", "artifact", {
+      verbose: false,
+      mediaUrl: "/tmp/artifact.bin",
+    });
+    expect(optimizeImageToPngMock).not.toHaveBeenCalled();
+    expect(sendMessage).toHaveBeenLastCalledWith(
+      "+1555",
+      "artifact",
+      buf,
+      "application/octet-stream",
+      {
+        fileName: "artifact.bin",
+      },
+    );
   });
 
   it("sends polls via active listener", async () => {

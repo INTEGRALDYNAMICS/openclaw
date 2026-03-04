@@ -2,13 +2,16 @@ import { describe, expect, it } from "vitest";
 import { buildPayloads, expectSingleToolErrorPayload } from "./payloads.test-helpers.js";
 
 describe("buildEmbeddedRunPayloads tool-error warnings", () => {
-  it("suppresses exec tool errors when verbose mode is off", () => {
+  it("shows exec tool errors when verbose mode is off (without details)", () => {
     const payloads = buildPayloads({
       lastToolError: { toolName: "exec", error: "command failed" },
       verboseLevel: "off",
     });
 
-    expect(payloads).toHaveLength(0);
+    expectSingleToolErrorPayload(payloads, {
+      title: "Exec",
+      absentDetail: "command failed",
+    });
   });
 
   it("shows exec tool errors when verbose mode is on", () => {

@@ -1,0 +1,49 @@
+From 2770f59e2a2027ebeb9b7763f2380e516a8a9319 Mon Sep 17 00:00:00 2001
+From: qu4ntum <qu4ntum@users.noreply.github.com>
+Date: Sun, 1 Mar 2026 05:38:41 -0300
+Subject: [PATCH 02/10] build: harden a2ui bundle pnpm invocation
+
+---
+ scripts/bundle-a2ui.sh | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/bundle-a2ui.sh b/scripts/bundle-a2ui.sh
+index 3278e1d35..8f7a33c78 100755
+--- a/scripts/bundle-a2ui.sh
++++ b/scripts/bundle-a2ui.sh
+@@ -13,6 +13,18 @@ OUTPUT_FILE="$ROOT_DIR/src/canvas-host/a2ui/a2ui.bundle.js"
+ A2UI_RENDERER_DIR="$ROOT_DIR/vendor/a2ui/renderers/lit"
+ A2UI_APP_DIR="$ROOT_DIR/apps/shared/OpenClawKit/Tools/CanvasA2UI"
+ 
++run_pnpm() {
++  if [[ -n "${npm_execpath:-}" && -f "${npm_execpath}" ]]; then
++    node "${npm_execpath}" "$@"
++    return
++  fi
++  if command -v corepack >/dev/null 2>&1; then
++    corepack pnpm "$@"
++    return
++  fi
++  pnpm "$@"
++}
++
+ # Docker builds exclude vendor/apps via .dockerignore.
+ # In that environment we can keep a prebuilt bundle only if it exists.
+ if [[ ! -d "$A2UI_RENDERER_DIR" || ! -d "$A2UI_APP_DIR" ]]; then
+@@ -85,11 +97,11 @@ if [[ -f "$HASH_FILE" ]]; then
+   fi
+ fi
+ 
+-pnpm -s exec tsc -p "$A2UI_RENDERER_DIR/tsconfig.json"
++run_pnpm -s exec tsc -p "$A2UI_RENDERER_DIR/tsconfig.json"
+ if command -v rolldown >/dev/null 2>&1; then
+   rolldown -c "$A2UI_APP_DIR/rolldown.config.mjs"
+ else
+-  pnpm -s dlx rolldown -c "$A2UI_APP_DIR/rolldown.config.mjs"
++  run_pnpm -s dlx rolldown -c "$A2UI_APP_DIR/rolldown.config.mjs"
+ fi
+ 
+ echo "$current_hash" > "$HASH_FILE"
+-- 
+2.51.0
+

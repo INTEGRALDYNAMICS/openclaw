@@ -118,7 +118,7 @@ Red:       Internet domiciliaria estándar
 ```
 NVIDIA NIM:
   URL:     https://integrate.api.nvidia.com/v1
-  Key:     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
+  Key:     nvapi-REDACTED
   Format:  OpenAI-compatible
   Modelos: deepseek-v3.2 (principal), llama-3.3-70b (fallback)
   Límite:  ~40 req/min

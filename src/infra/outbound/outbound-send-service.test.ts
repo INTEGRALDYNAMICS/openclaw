@@ -120,6 +120,36 @@ describe("executeSendAction", () => {
     );
   });
 
+  it("merges explicit media roots with agent-scoped roots for core outbound sends", async () => {
+    mocks.dispatchChannelMessageAction.mockResolvedValue(null);
+    mocks.sendMessage.mockResolvedValue({
+      channel: "discord",
+      to: "channel:123",
+      via: "direct",
+      mediaUrl: "/workspace/logo.svg",
+    });
+
+    await executeSendAction({
+      ctx: {
+        cfg: {},
+        channel: "discord",
+        params: {},
+        agentId: "agent-1",
+        mediaLocalRoots: ["/workspace"],
+        dryRun: false,
+      },
+      to: "channel:123",
+      message: "hello",
+      mediaUrl: "/workspace/logo.svg",
+    });
+
+    expect(mocks.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaLocalRoots: ["/workspace", "/tmp/agent-roots"],
+      }),
+    );
+  });
+
   it("forwards poll args to sendPoll on core outbound path", async () => {
     mocks.dispatchChannelMessageAction.mockResolvedValue(null);
     mocks.sendPoll.mockResolvedValue({

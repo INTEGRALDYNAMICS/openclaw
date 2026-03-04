@@ -2,7 +2,7 @@
 # nvidia-nim-usage.sh — Monitor de uso de tokens NVIDIA NIM
 # Uso: bash nvidia-nim-usage.sh
 
-API_KEY="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"
+API_KEY="nvapi-REDACTED"
 
 echo "📊 NVIDIA NIM — Monitor de uso"
 echo "================================"

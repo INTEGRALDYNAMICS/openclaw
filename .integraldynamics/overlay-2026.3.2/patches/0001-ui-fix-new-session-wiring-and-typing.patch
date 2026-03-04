@@ -1,0 +1,149 @@
+From ad95466b7978725262f55d22f661a48804f467a0 Mon Sep 17 00:00:00 2001
+From: qu4ntum <qu4ntum@users.noreply.github.com>
+Date: Sun, 1 Mar 2026 05:23:32 -0300
+Subject: [PATCH 01/10] ui: fix new session wiring and typing
+
+---
+ ui/src/ui/app-render.ts          |  3 ++-
+ ui/src/ui/app-view-state.ts      |  1 +
+ ui/src/ui/app.ts                 | 41 ++++++++++++++++++++++++++++++++
+ ui/src/ui/views/sessions.test.ts |  1 +
+ ui/src/ui/views/sessions.ts      | 12 +++++++---
+ 5 files changed, 54 insertions(+), 4 deletions(-)
+
+diff --git a/ui/src/ui/app-render.ts b/ui/src/ui/app-render.ts
+index 7bf0665de..be44c65d1 100644
+--- a/ui/src/ui/app-render.ts
++++ b/ui/src/ui/app-render.ts
+@@ -434,6 +434,7 @@ export function renderApp(state: AppViewState) {
+                 onRefresh: () => loadSessions(state),
+                 onPatch: (key, patch) => patchSession(state, key, patch),
+                 onDelete: (key) => deleteSessionAndRefresh(state, key),
++                onNewSession: () => void state.handleNewSession(),
+               })
+             : nothing
+         }
+@@ -1060,7 +1061,7 @@ export function renderApp(state: AppViewState) {
+                 canAbort: Boolean(state.chatRunId),
+                 onAbort: () => void state.handleAbortChat(),
+                 onQueueRemove: (id) => state.removeQueuedMessage(id),
+-                onNewSession: () => state.handleSendChat("/new", { restoreDraft: true }),
++                onNewSession: () => void state.handleNewSession(),
+                 showNewMessages: state.chatNewMessagesBelow && !state.chatManualRefreshInFlight,
+                 onScrollToBottom: () => state.scrollToBottom(),
+                 // Sidebar props for tool output viewing
+diff --git a/ui/src/ui/app-view-state.ts b/ui/src/ui/app-view-state.ts
+index c5cf3573a..cd5d804cc 100644
+--- a/ui/src/ui/app-view-state.ts
++++ b/ui/src/ui/app-view-state.ts
+@@ -307,6 +307,7 @@ export type AppViewState = {
+     setPassword: (next: string) => void;
+     setSessionKey: (next: string) => void;
+     setChatMessage: (next: string) => void;
++    handleNewSession: () => Promise<void>;
+     handleSendChat: (messageOverride?: string, opts?: { restoreDraft?: boolean }) => Promise<void>;
+     handleAbortChat: () => Promise<void>;
+     removeQueuedMessage: (id: string) => void;
+diff --git a/ui/src/ui/app.ts b/ui/src/ui/app.ts
+index 3b50922bd..ec44e49ab 100644
+--- a/ui/src/ui/app.ts
++++ b/ui/src/ui/app.ts
+@@ -1,5 +1,6 @@
+ import { LitElement } from "lit";
+ import { customElement, state } from "lit/decorators.js";
++import { parseAgentSessionKey } from "../../../src/routing/session-key.js";
+ import { i18n, I18nController, isSupportedLocale } from "../i18n/index.ts";
+ import {
+   handleChannelConfigReload as handleChannelConfigReloadInternal,
+@@ -615,6 +616,46 @@ export class OpenClawApp extends LitElement {
+     this.applySettings({ ...this.settings, splitRatio: newRatio });
+   }
+ 
++  async handleNewSession() {
++    const parsed = parseAgentSessionKey(this.sessionKey);
++    const agentId = parsed?.agentId || this.assistantAgentId || "main";
++    const nextUuid = generateUUID();
++    const nextKey = `agent:${agentId}:${nextUuid}`;
++
++    this.sessionKey = nextKey;
++    this.chatMessage = "";
++    this.chatAttachments = [];
++    this.chatStream = null;
++    this.chatStreamStartedAt = null;
++    this.chatRunId = null;
++    this.chatQueue = [];
++    this.resetToolStream();
++
++    this.applySettings({
++      ...this.settings,
++      sessionKey: nextKey,
++      lastActiveSessionKey: nextKey,
++    });
++
++    // If not in chat tab, switch to it
++    if (this.tab !== "chat") {
++      this.setTab("chat");
++    } else {
++      // Sync URL manually if already in chat tab
++      const { syncUrlWithSessionKey } = await import("./app-settings.ts");
++      syncUrlWithSessionKey(
++        this as unknown as Parameters<typeof syncUrlWithSessionKey>[0],
++        nextKey,
++        false,
++      );
++      void this.loadAssistantIdentity();
++      const { loadChatHistory } = await import("./controllers/chat.ts");
++      void loadChatHistory(this as unknown as Parameters<typeof loadChatHistory>[0]);
++      const { refreshChatAvatar } = await import("./app-chat.ts");
++      void refreshChatAvatar(this as unknown as Parameters<typeof refreshChatAvatar>[0]);
++    }
++  }
++
+   render() {
+     return renderApp(this as unknown as AppViewState);
+   }
+diff --git a/ui/src/ui/views/sessions.test.ts b/ui/src/ui/views/sessions.test.ts
+index 453c21659..2e1739edb 100644
+--- a/ui/src/ui/views/sessions.test.ts
++++ b/ui/src/ui/views/sessions.test.ts
+@@ -25,6 +25,7 @@ function buildProps(result: SessionsListResult): SessionsProps {
+     basePath: "",
+     onFiltersChange: () => undefined,
+     onRefresh: () => undefined,
++    onNewSession: () => undefined,
+     onPatch: () => undefined,
+     onDelete: () => undefined,
+   };
+diff --git a/ui/src/ui/views/sessions.ts b/ui/src/ui/views/sessions.ts
+index 6f0332f62..b64e5982d 100644
+--- a/ui/src/ui/views/sessions.ts
++++ b/ui/src/ui/views/sessions.ts
+@@ -30,6 +30,7 @@ export type SessionsProps = {
+     },
+   ) => void;
+   onDelete: (key: string) => void;
++  onNewSession: () => void;
+ };
+ 
+ const THINK_LEVELS = ["", "off", "minimal", "low", "medium", "high", "xhigh"] as const;
+@@ -116,9 +117,14 @@ export function renderSessions(props: SessionsProps) {
+           <div class="card-title">Sessions</div>
+           <div class="card-sub">Active session keys and per-session overrides.</div>
+         </div>
+-        <button class="btn" ?disabled=${props.loading} @click=${props.onRefresh}>
+-          ${props.loading ? "Loading…" : "Refresh"}
+-        </button>
++        <div class="row" style="gap: 8px;">
++          <button class="btn btn--primary" ?disabled=${props.loading} @click=${props.onNewSession}>
++            New Session
++          </button>
++          <button class="btn" ?disabled=${props.loading} @click=${props.onRefresh}>
++            ${props.loading ? "Loading…" : "Refresh"}
++          </button>
++        </div>
+       </div>
+ 
+       <div class="filters" style="margin-top: 14px;">
+-- 
+2.51.0
+

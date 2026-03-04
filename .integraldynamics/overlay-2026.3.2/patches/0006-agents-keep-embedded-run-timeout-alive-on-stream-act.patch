@@ -1,0 +1,107 @@
+From 5ba725511bb435eff292dd753ce43dcea58a6dea Mon Sep 17 00:00:00 2001
+From: qu4ntum <qu4ntum@users.noreply.github.com>
+Date: Mon, 2 Mar 2026 04:06:14 -0300
+Subject: [PATCH 06/10] agents: keep embedded run timeout alive on stream
+ activity
+
+---
+ src/agents/pi-embedded-runner/run/attempt.ts  |  3 ++
+ src/agents/pi-embedded-subscribe.handlers.ts  |  4 +++
+ ...session.subscribeembeddedpisession.test.ts | 35 +++++++++++++++++++
+ src/agents/pi-embedded-subscribe.types.ts     |  5 +++
+ 4 files changed, 47 insertions(+)
+
+diff --git a/src/agents/pi-embedded-runner/run/attempt.ts b/src/agents/pi-embedded-runner/run/attempt.ts
+index ac9d74c85..193e9f010 100644
+--- a/src/agents/pi-embedded-runner/run/attempt.ts
++++ b/src/agents/pi-embedded-runner/run/attempt.ts
+@@ -1201,6 +1201,9 @@ export async function runEmbeddedAttempt(
+         blockReplyChunking: params.blockReplyChunking,
+         onPartialReply: params.onPartialReply,
+         onAssistantMessageStart: params.onAssistantMessageStart,
++        onActivity: () => {
++          markRunActivity?.();
++        },
+         onAgentEvent: onAgentEventWithActivity,
+         enforceFinalTag: params.enforceFinalTag,
+         config: params.config,
+diff --git a/src/agents/pi-embedded-subscribe.handlers.ts b/src/agents/pi-embedded-subscribe.handlers.ts
+index 96ebe52ff..40ec19801 100644
+--- a/src/agents/pi-embedded-subscribe.handlers.ts
++++ b/src/agents/pi-embedded-subscribe.handlers.ts
+@@ -21,6 +21,10 @@ import type {
+ 
+ export function createEmbeddedPiSessionEventHandler(ctx: EmbeddedPiSubscribeContext) {
+   return (evt: EmbeddedPiSubscribeEvent) => {
++    // Treat any raw session event as run activity so idle timeouts do not fire
++    // while provider stream/tool events are still flowing.
++    void ctx.params.onActivity?.();
++
+     switch (evt.type) {
+       case "message_start":
+         handleMessageStart(ctx, evt as never);
+diff --git a/src/agents/pi-embedded-subscribe.subscribe-embedded-pi-session.subscribeembeddedpisession.test.ts b/src/agents/pi-embedded-subscribe.subscribe-embedded-pi-session.subscribeembeddedpisession.test.ts
+index 2bce8b8bd..9fa7d0567 100644
+--- a/src/agents/pi-embedded-subscribe.subscribe-embedded-pi-session.subscribeembeddedpisession.test.ts
++++ b/src/agents/pi-embedded-subscribe.subscribe-embedded-pi-session.subscribeembeddedpisession.test.ts
+@@ -265,6 +265,41 @@ describe("subscribeEmbeddedPiSession", () => {
+     expect(onReasoningEnd).toHaveBeenCalledTimes(1);
+   });
+ 
++  it("marks activity on raw thinking events even when no assistant agent event is emitted", () => {
++    let handler: ((evt: unknown) => void) | undefined;
++    const session: StubSession = {
++      subscribe: (fn) => {
++        handler = fn;
++        return () => {};
++      },
++    };
++
++    const onActivity = vi.fn();
++    const onAgentEvent = vi.fn();
++
++    subscribeEmbeddedPiSession({
++      session: session as unknown as Parameters<typeof subscribeEmbeddedPiSession>[0]["session"],
++      runId: "run",
++      onActivity,
++      onAgentEvent,
++    });
++
++    handler?.({
++      type: "message_update",
++      message: {
++        role: "assistant",
++        content: [{ type: "thinking", thinking: "Still reasoning" }],
++      },
++      assistantMessageEvent: {
++        type: "thinking_delta",
++        delta: "Still reasoning",
++      },
++    });
++
++    expect(onActivity).toHaveBeenCalledTimes(1);
++    expect(onAgentEvent).not.toHaveBeenCalled();
++  });
++
+   it("emits reasoning end once when native and tagged reasoning end overlap", () => {
+     let handler: ((evt: unknown) => void) | undefined;
+     const session: StubSession = {
+diff --git a/src/agents/pi-embedded-subscribe.types.ts b/src/agents/pi-embedded-subscribe.types.ts
+index afa635d73..4b2be91c1 100644
+--- a/src/agents/pi-embedded-subscribe.types.ts
++++ b/src/agents/pi-embedded-subscribe.types.ts
+@@ -27,6 +27,11 @@ export type SubscribeEmbeddedPiSessionParams = {
+   blockReplyChunking?: BlockReplyChunking;
+   onPartialReply?: (payload: { text?: string; mediaUrls?: string[] }) => void | Promise<void>;
+   onAssistantMessageStart?: () => void | Promise<void>;
++  /**
++   * Called for every raw session event handled by the embedded subscriber.
++   * Use this to track liveness/activity even when visible assistant deltas are suppressed.
++   */
++  onActivity?: () => void | Promise<void>;
+   onAgentEvent?: (evt: { stream: string; data: Record<string, unknown> }) => void | Promise<void>;
+   enforceFinalTag?: boolean;
+   config?: OpenClawConfig;
+-- 
+2.51.0
+

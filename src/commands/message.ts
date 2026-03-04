@@ -1,3 +1,4 @@
+import { resolveSessionAgentId } from "../agents/agent-scope.js";
 import {
   CHANNEL_MESSAGE_ACTION_NAMES,
   type ChannelMessageActionName,
@@ -38,12 +39,27 @@ export async function messageCommand(
   const action = actionMatch as ChannelMessageActionName;
 
   const outboundDeps: OutboundSendDeps = createOutboundSendDeps(deps);
+  const sessionKey =
+    typeof opts.sessionKey === "string"
+      ? opts.sessionKey.trim()
+      : typeof opts.session === "string"
+        ? opts.session.trim()
+        : "";
+  const explicitAgentId = typeof opts.agentId === "string" ? opts.agentId.trim() : "";
+  const agentId =
+    explicitAgentId ||
+    resolveSessionAgentId({
+      sessionKey: sessionKey || undefined,
+      config: cfg,
+    });
 
   const run = async () =>
     await runMessageAction({
       cfg,
       action,
       params: opts,
+      sessionKey: sessionKey || undefined,
+      agentId,
       deps: outboundDeps,
       gateway: {
         clientName: GATEWAY_CLIENT_NAMES.CLI,

@@ -71,6 +71,22 @@ describe("sendMessage", () => {
     );
   });
 
+  it("forwards explicit mediaLocalRoots to outbound delivery", async () => {
+    await sendMessage({
+      cfg: {},
+      channel: "telegram",
+      to: "123456",
+      content: "hi",
+      mediaLocalRoots: ["/workspace/reports"],
+    });
+
+    expect(mocks.deliverOutboundPayloads).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mediaLocalRoots: ["/workspace/reports"],
+      }),
+    );
+  });
+
   it("recovers telegram plugin resolution so message/send does not fail with Unknown channel: telegram", async () => {
     const telegramPlugin = {
       outbound: { deliveryMode: "direct" },

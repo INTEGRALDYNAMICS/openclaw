@@ -222,6 +222,8 @@ type DeliverOutboundPayloadsCoreParams = {
   onPayload?: (payload: NormalizedOutboundPayload) => void;
   /** Session/agent context used for hooks and media local-root scoping. */
   session?: OutboundSessionContext;
+  /** Additional media roots to allow for this specific outbound delivery. */
+  mediaLocalRoots?: readonly string[];
   mirror?: {
     sessionKey: string;
     agentId?: string;
@@ -246,6 +248,27 @@ type MessageSentEvent = {
   error?: string;
   messageId?: string;
 };
+
+function mergeMediaLocalRoots(
+  ...groups: Array<readonly string[] | undefined>
+): readonly string[] | undefined {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const group of groups) {
+    if (!group) {
+      continue;
+    }
+    for (const root of group) {
+      const trimmed = root.trim();
+      if (!trimmed || seen.has(trimmed)) {
+        continue;
+      }
+      seen.add(trimmed);
+      merged.push(trimmed);
+    }
+  }
+  return merged.length > 0 ? merged : undefined;
+}
 
 function hasMediaPayload(payload: ReplyPayload): boolean {
   return Boolean(payload.mediaUrl) || (payload.mediaUrls?.length ?? 0) > 0;
@@ -515,9 +538,9 @@ async function deliverOutboundPayloadsCore(
   const deps = params.deps;
   const abortSignal = params.abortSignal;
   const sendSignal = params.deps?.sendSignal ?? sendMessageSignal;
-  const mediaLocalRoots = getAgentScopedMediaLocalRoots(
-    cfg,
-    params.session?.agentId ?? params.mirror?.agentId,
+  const mediaLocalRoots = mergeMediaLocalRoots(
+    params.mediaLocalRoots,
+    getAgentScopedMediaLocalRoots(cfg, params.session?.agentId ?? params.mirror?.agentId),
   );
   const results: OutboundDeliveryResult[] = [];
   const handler = await createChannelHandler({

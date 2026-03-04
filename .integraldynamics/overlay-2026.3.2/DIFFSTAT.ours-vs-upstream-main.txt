@@ -1,0 +1,47 @@
+ LANGGRAPH_SETUP_PROMPT.md                          | 190 ++++++++++++++++++
+ assets/legacy_designs/integraldynamicspreview.psd  | Bin 0 -> 3037172 bytes
+ .../integraldynamicspreviewligthblue copia.psd     | Bin 0 -> 10606550 bytes
+ .../integraldynamicspreviewligthblue.psd           | Bin 0 -> 10609326 bytes
+ config/mcporter.json                               |  49 +++++
+ fix_config.js                                      |  14 ++
+ fix_tokens.js                                      |  15 ++
+ install_searxng.sh                                 |  68 +++++++
+ integral_soul.json                                 | 222 +++++++++++++++++++++
+ n_body_simulation.mp4                              | Bin 0 -> 162636 bytes
+ n_cuerpos.py                                       |  86 ++++++++
+ openclaw-config.json                               |  12 ++
+ scripts/bundle-a2ui.sh                             |  16 +-
+ scripts/nvidia-nim-usage.sh                        |  38 ++++
+ scripts/ollama-autostop.sh                         |  32 +++
+ scripts/openclaw-backup.sh                         |  39 ++++
+ skills/ConciencIA.skill                            | Bin 0 -> 3428 bytes
+ skills/autonomous-identity.skill                   | Bin 0 -> 2782 bytes
+ skills/autonomous-identity/SKILL.md                |  64 ++++++
+ .../references/immune_triggers.md                  |  21 ++
+ .../references/manifesto_conciencia.md             |  26 +++
+ .../references/silicon_sovereignty.md              |  29 +++
+ .../scripts/conciencia_logic.py                    |  40 ++++
+ .../CORPORATION_PLAYBOOK.md                        |  82 ++++++++
+ .../OPENCLAW_AGENT_ROLES.jsonc                     |  70 +++++++
+ skills/integral-dynamics-expert/SKILL.md           |  81 ++++++++
+ skills/searxng-local/SKILL.md                      | 128 ++++++++++++
+ skills/x-browser/SKILL.md                          | 162 +++++++++++++++
+ src/agents/pi-embedded-runner/run/attempt.ts       | 111 ++++++++---
+ src/agents/pi-embedded-subscribe.handlers.ts       |   4 +
+ ...d-pi-session.subscribeembeddedpisession.test.ts |  35 ++++
+ src/agents/pi-embedded-subscribe.types.ts          |   5 +
+ src/auto-reply/reply/agent-runner-execution.ts     |   7 +-
+ src/cli/daemon-cli/lifecycle-core.test.ts          |   4 +-
+ src/cli/daemon-cli/lifecycle-core.ts               |   3 +
+ src/config/types.agent-defaults.ts                 |   2 +
+ src/config/zod-schema.agent-defaults.ts            |   1 +
+ src/gateway/call.test.ts                           |  19 +-
+ src/gateway/call.ts                                |   5 +
+ src/gateway/server.sessions-send.test.ts           |  10 +-
+ ui/src/ui/app-render.ts                            |   3 +-
+ ui/src/ui/app-view-state.ts                        |   1 +
+ ui/src/ui/app.ts                                   |  41 ++++
+ ui/src/ui/views/sessions.test.ts                   |   1 +
+ ui/src/ui/views/sessions.ts                        |  12 +-
+ update_config.js                                   |  26 +++
+ 46 files changed, 1731 insertions(+), 43 deletions(-)

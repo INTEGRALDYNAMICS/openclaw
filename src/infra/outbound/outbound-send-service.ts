@@ -26,6 +26,8 @@ export type OutboundSendContext = {
   params: Record<string, unknown>;
   /** Active agent id for per-agent outbound media root scoping. */
   agentId?: string;
+  /** Additional media roots for this request (for example sandbox roots). */
+  mediaLocalRoots?: readonly string[];
   accountId?: string | null;
   gateway?: OutboundGatewayContext;
   toolContext?: ChannelThreadingToolContext;
@@ -41,6 +43,34 @@ export type OutboundSendContext = {
   silent?: boolean;
 };
 
+function mergeMediaLocalRoots(
+  ...groups: Array<readonly string[] | undefined>
+): readonly string[] | undefined {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const group of groups) {
+    if (!group) {
+      continue;
+    }
+    for (const root of group) {
+      const trimmed = root.trim();
+      if (!trimmed || seen.has(trimmed)) {
+        continue;
+      }
+      seen.add(trimmed);
+      merged.push(trimmed);
+    }
+  }
+  return merged.length > 0 ? merged : undefined;
+}
+
+function resolveContextMediaLocalRoots(ctx: OutboundSendContext): readonly string[] | undefined {
+  return mergeMediaLocalRoots(
+    ctx.mediaLocalRoots,
+    getAgentScopedMediaLocalRoots(ctx.cfg, ctx.agentId ?? ctx.mirror?.agentId),
+  );
+}
+
 type PluginHandledResult = {
   handledBy: "plugin";
   payload: unknown;
@@ -55,10 +85,7 @@ async function tryHandleWithPluginAction(params: {
   if (params.ctx.dryRun) {
     return null;
   }
-  const mediaLocalRoots = getAgentScopedMediaLocalRoots(
-    params.ctx.cfg,
-    params.ctx.agentId ?? params.ctx.mirror?.agentId,
-  );
+  const mediaLocalRoots = resolveContextMediaLocalRoots(params.ctx);
   const handled = await dispatchChannelMessageAction({
     channel: params.ctx.channel,
     action: params.action,
@@ -128,6 +155,7 @@ export async function executeSendAction(params: {
     to: params.to,
     content: params.message,
     agentId: params.ctx.agentId,
+    mediaLocalRoots: resolveContextMediaLocalRoots(params.ctx),
     mediaUrl: params.mediaUrl || undefined,
     mediaUrls: params.mediaUrls,
     channel: params.ctx.channel || undefined,

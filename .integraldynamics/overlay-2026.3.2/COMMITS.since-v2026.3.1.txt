@@ -1,0 +1,458 @@
+63dcb61c5 assets: add legacy design previews and simulation sample
+d69e2f7e1 scripts: add local ops helpers and setup examples
+ed0579487 skills: add autonomous identity and channel skill packs
+9345017cf skills: add integral dynamics corporation playbook
+5ba725511 agents: keep embedded run timeout alive on stream activity
+e2eadaef6 gateway tests: keep sessions_send auth token stable across suite resets
+7acd0ad99 agent: fix stream-idle timeout config + gateway token drift check
+997bc4469 Gateway: prefer config auth over env for local CLI calls
+2770f59e2 build: harden a2ui bundle pnpm invocation
+ad95466b7 ui: fix new session wiring and typing
+320920d52 fix: harden bundled plugin install fallback semantics (#32096) (thanks @scoootscooob)
+ad12d1fbc fix(plugins): prefer bundled plugin ids over bare npm specs
+bfb6c6290 fix: distinguish warning message for non-OpenClaw vs missing npm package
+da8a17d8d fix(plugins): fall back to bundled plugin when npm spec resolves to non-OpenClaw package (#32019)
+089a8785b fix: harden msteams revoked-context fallback delivery (#27224) (thanks @openperf)
+e0b91067e fix(msteams): add proactive fallback for revoked turn context
+d2bb04b43 fix: document msteams auth redirect scoping hardening (#25045) (thanks @bmendonca3)
+4a414c5e5 fix(msteams): scope auth across media redirects
+da22a9113 test(msteams): cover auth stripping on graph redirect hops
+8937c10f1 fix(msteams): scope graph auth redirects
+259f6543b fix: harden config backup permissions and cleanup (#31718) (thanks @YUJIE2002)
+3c0ec76e8 fix(config): harden backup file permissions and clean orphan .bak files
+d80144f57 fix: keep long Telegram model callbacks selectable (#31857) (thanks @bmendonca3)
+54eb13893 Telegram: support compact model callback fallback
+c582a5455 fix(msteams): preserve guarded dispatcher redirects
+cceecc8bd msteams: enforce guarded redirect ownership in safeFetch
+00347bda7 fix(tools): strip xAI-unsupported JSON Schema keywords from tool definitions
+da05395c2 fix(telegram): preserve original filename from Telegram document/audio/video uploads
+e45d26b9e chore(gitignore): add .claude folder to gitignore (#32141)
+16e7fc256 fix(models): infer codex weekly usage labels from reset cadence
+479095bcf fix(discord): use per-channel message queues to restore parallel agent dispatch
+5b63417fe fix(slack): apply mrkdwn conversion in streaming and preview paths
+6945ba189 msteams: harden webhook ingress timeouts
+ab0b2c21f WhatsApp: guard main DM last-route to single owner
+f534ea990 fix: prevent reasoning text leak through handleMessageEnd fallback
+15677133c test(msteams): remove tuple-unsafe spread in lifecycle mocks
+c9d0e345c fix(msteams): keep monitor alive until shutdown
+bf0653846 Gateway: suppress NO_REPLY lead-fragment chat leaks
+3de7768b1 perf(routing): cache normalized agent-id lookups
+2937fe035 perf(config): skip redundant schema and session-store work
+fb5d8a9cd perf(slack): memoize allow-from and mention paths
+2f352306f perf(security): cache scanner directory walks
+f7765bc15 perf(cron): cache schedule evaluators and stagger offsets
+b52561bfa fix(synology-chat): prevent restart loop in startAccount (#23074)
+4b5001840 fix: restore helper imports and plugin hook test exports
+700361597 fix: resolve rebase conflict markers
+eb816e055 refactor: dedupe extension and ui helpers
+b1c30f0ba refactor: dedupe cli config cron and install flows
+9d30159fc refactor: dedupe channel and gateway surfaces
+9617ac9dd refactor: dedupe agent and reply runtimes
+8768487ae refactor(shared): dedupe protocol schema typing and session/media helpers
+ee0d7ba6d chore: normalize changelog credit for #31841 (thanks @liuxiaopai-ai)
+c48a0621f fix(agents): map sandbox workdir from container path
+b1cc8ffe9 fix: migrate legacy cron store shapes (#31926) (thanks @bmendonca3)
+4cd04e465 fix(cron): migrate legacy string schedule and command jobs
+c424836fb refactor: harden outbound, matrix bootstrap, and plugin entry resolution
+a351ab248 fix: persist webchat stream-only finals (#31920) (thanks @Sid-Qin)
+15226b0b8 fix(gateway): persist streamed text when webchat final event lacks message
+0cf533ac6 fix: recover orphan same-pid session locks (#32081) (thanks @bmendonca3)
+4985c561d sessions: reclaim orphan self-pid lock files
+160dad56c fix: suppress HEARTBEAT_OK fallback leak (#32093) (thanks @scoootscooob)
+a3c5d21b4 fix(cron): suppress HEARTBEAT_OK summary from leaking into main session (#32013)
+9a3800d8e fix(synology-chat): resolve Chat API user_id for reply delivery (#23709)
+39afcee86 test(perf): trim cron and audit fixture overhead
+d979eeda9 perf(runtime): reduce slack prep and qmd cache-key overhead
+8e48f7e35 fix(tui): honor explicit gateway auth for url overrides
+2a2e2c363 fix: land synology webhook payload compatibility ACK (#26635) (thanks @memphislee09-source)
+92bf77d9a fix(synology-chat): accept JSON/aliases and ACK webhook with 204
+a3bb7a5ee fix: land synology webhook bounded body reads (#25831) (thanks @bmendonca3)
+2b088ca12 test(synology-chat): use real plugin-sdk helper exports
+aeeb0474c test(synology-chat): match request destroy typing
+6df36a8b3 fix(synology-chat): bound webhook body read time
+fbd1210ec fix(plugins): support legacy install entry fallback (#32055)
+26b8a70a5 fix(synology-chat): use finalizeInboundContext for proper normalization
+e39164604 fix(synology-chat): add missing context fields for message delivery
+e51371410 fix(synology-chat): read cfg from outbound context so incomingUrl resolves
+b64565492 fix: avoid stale followup drain callbacks (#31902) (thanks @Lanfei)
+60130203e fix(queue): restart drain when message enqueued after idle window
+c4511df28 test(perf): increase guardrail scan read concurrency
+64abf9a92 test(perf): use prebuilt plugin install archive fixtures
+161611317 perf(runtime): reduce cron persistence and logger overhead
+fcec2e364 fix(matrix): keep plugin register sync while bootstrapping crypto runtime (#31989)
+66c1da45d matrix: bootstrap crypto runtime when npm scripts are skipped
+dbbd41a2e fix(security): harden file installs and race-path tests
+e1bc5cad2 fix(outbound): harden plain-text HTML sanitization paths (#32034)
+62d0cfeee fix(delivery): strip HTML tags for plain-text messaging surfaces
+a19a7f5e6 feat(security): Harden Docker browser container chromium flags (#23889) (#31504)
+ea1fe77c8 fix: normalize coding-plan providers in auth order validation
+d486b0a92 fix(telegram): scope command-sync hash cache by bot identity (#32059)
+10fb632c9 fix: skip Telegram command sync when menu is unchanged (#32017)
+4a2329e0a fix: add changelog credit for fsPolicy image/pdf propagation (#31882) (thanks @justinhuangcode)
+14baadda2 fix(tools): honor fsPolicy.workspaceOnly in image/pdf tool localRoots
+aab87ec88 fix(agents): scope volcengine-plan/byteplus-plan auth lookup to profile resolution
+a71b8d23b fix: add changelog credit for openrouter x-ai reasoning guard (#32054) (thanks @scoootscooob)
+6c7d01232 fix(openrouter): skip reasoning.effort injection for x-ai/grok models
+0956b599e fix: harden slack debounce key routing and ordering (#31951) (thanks @scoootscooob)
+d4b20f529 fix(slack): scope debounce key by message timestamp to prevent cross-thread collisions
+07eaeb735 test(perf): reduce per-case setup in script and git-hook tests
+83ec545be test(perf): trim repeated setup in cron memory and config suites
+6add2bcc1 test(process): replace no-output timer subprocess with spawn mock
+fbb343ab3 fix: add changelog credit for heartbeat model reload (#32046) (thanks @stakeswky)
+e1e93d932 fix(gateway): restart heartbeat on model config changes
+ee68fa86b fix: harden plugin command registration + telegram menu guard (#31997) (thanks @liuxiaopai-ai)
+0958d1147 fix(telegram): guard malformed native menu specs
+ed55b6368 fix: add regression for memory-lancedb dimensions pass-through (#32036) (thanks @scotthuang)
+31bc2cc20 fix(memory-lancedb): pass dimensions to embedding API call
+c146748d7 fix: add changelog for mentions/slack null-safe guards (#31865) (thanks @stone-jin)
+2a98fd3d0 fix(slack): guard against undefined text in includes calls during mention handling
+ce4faedad fix: add changelog for HTTP 529 failover classification (#31854) (thanks @bugkill3r)
+1ef9a2a8e fix: handle HTTP 529 (Anthropic overloaded) in failover error classification
+84d9b6432 fix: add changelog for exact voice webhook path match (#31930) (thanks @afurm)
+99392f986 chore: keep #31930 scoped to voice webhook path fix
+662f389f4 Tests: isolate webhook path suite and reset cron auth state
+3bd050543 Voice Call: enforce exact webhook path match
+dde43121c fix(deps): add strip-ansi runtime dependency
+6a5041f3f test(exec): deflake no-output timeout heartbeat scenario
+bcb1eb2f0 perf(test): speed up setup and config path resolution
+842087319 perf(logging): skip config/fs work in default silent test path
+5c1eb071c fix(whatsapp): restore direct inbound metadata for relay agents (#31969)
+4030de6c7 fix(cron): move session reaper to finally block so it runs reliably (#31996)
+c9558cdcd fix(launchd): set restrictive umask in gateway plist
+740bb77c8 fix(reply): prefer provider over surface for run channel fallback
+63734df3b fix(doctor): resolve false positive for local memory search when no explicit modelPath (#32014)
+534168a7a fix: add changelog entry for config-form secret union (#31866) (thanks @ningding97)
+9c1312b5e fix(ui): handle SecretInput union in config form analyzer
+172727959 fix(browser): default to openclaw profile when unspecified (#32031)
+d52e5e1d8 fix: add regression tests for telegram token guard (#31973) (thanks @ningding97)
+c1c20491d fix(telegram): guard token.trim() against undefined to prevent startup crash
+d21cf4445 fix(slack): remove message.channels/message.groups handlers that crash Bolt 4.6 (#32033)
+738f5d453 skills: make sherpa-onnx-tts bin ESM-compatible
+a8fe8b6bf test(guardrails): exclude suite files and harden auth temp identity naming
+82f01d608 perf(runtime): reduce startup import overhead in logging and schema validation
+41c8734af fix(gateway): move plugin HTTP routes before Control UI SPA catch-all (#31885)
+cf5702233 docs(security)!: document messaging-only onboarding default and hook/model risk
+718d418b3 fix(daemon): harden launchd plist with umask 077 (#31919)
+16df7ef4a feat(onboarding)!: default tools profile to messaging
+9b8e64247 Config: newline-join sandbox setupCommand arrays (#31953)
+8b2758250 fix(cli): apply --profile before dotenv bootstrap in runCli (#31950)
+a6489ab5e fix(agents): cap openai-completions tool call ids to provider-safe format (#31947)
+83c8406f0 refactor(security): split gateway auth suites and share safe write path checks
+602f6439b test(memory): stabilize windows qmd spawn expectation
+1c9deeda9 refactor: split webhook ingress and policy guards
+fc0d37439 test(perf): drop duplicate gateway config patch validation case
+0ebe0480f test(perf): replace relay fixed sleeps with condition waits
+8ae805662 test(perf): trim telegram webhook artificial delay windows
+54382a66b test(perf): bypass matrix send queue delay in send tests
+d7ae61c41 test(gateway): fix trusted-proxy control-ui auth test origin config
+b07589642 test(perf): remove redundant acpx healthy-command case
+26b8e6d51 test(perf): avoid cron min-refire delay in auto-run coverage
+e339c75d5 style(docs): format faq markdown spacing
+7dac9b05d fix(security): harden zip write race handling
+eb35fb745 docs: remove provider recommendation language
+b9e820b7e test(perf): cut exec approval metadata test timeout
+aee27d0e3 refactor(security): table-drive wrapper approval pinning tests
+34ff873a7 test(perf): trim fixed waits in relay and startup tests
+310dd24ce test(perf): clean acpx runtime fixtures at suite end
+d4bf07d07 refactor(security): unify hardened install and fs write flows
+d3e8b17aa fix: harden webhook auth-before-body handling
+dded56962 fix(security): preserve system.run wrapper approval semantics
+104d32bb6 fix(security): unify root-bound write hardening
+be3a62c5e test(perf): defer delivery queue fixture cleanup to suite end
+193ad2f4f fix: handle PowerShell execution policy on Windows install (#24794)
+a0e11e63f docs(faq): add Windows exec encoding troubleshooting (#30736)
+07b16d5ad fix(security): harden workspace bootstrap boundary reads
+67b2dde7c Docs: add WSL2 boot auto-start guide (#31616)
+7a55a3ca0 fix(install): correct Windows PATH troubleshooting docs (#28102)
+11562c452 test(perf): avoid unused heartbeat fixture file writes
+eb2e20c99 fix(ui): preserve margin-top: 0 for onboarding mode
+24a13c05b fix(ui): add mobile responsive margins and overflow fallback
+20c36f7e8 fix(ui): prevent config page save button from being clipped by overflow
+db7a8a698 test(perf): reuse delivery queue suite temp root
+4a8031162 refactor(security): split sandbox media staging and stream safe copies
+7a7eee920 refactor(gateway): harden plugin http route contracts
+33e76db12 refactor(gateway): scope ws origin fallback metrics to runtime
+9a6859038 refactor(logging): extract bounded regex redaction util
+031bf0c6c refactor(security): split safe-regex parse and bounded matching
+8611fd67b test(perf): remove duplicate bundled memory slot loader case
+14c93d264 docs(changelog): add skills archive extraction hardening note
+1b462ed17 fix(test): use NTFS junctions and platform guards for symlink tests on Windows (openclaw#28747) thanks @arosstale
+18f8393b6 fix: harden sandbox writes and centralize atomic file writes
+14e4575af docs(changelog): note gateway and regex hardening
+b1592457f perf(security): bound regex input in filters and redaction
+31c7637e0 fix(security): block quantified ambiguous alternation regex
+d5ae4b833 fix(gateway): require local client for loopback origin fallback
+0dbb92dd2 fix(security): harden tar archive extraction parity
+17ede52a4 fix(security): harden sandbox media staging destination writes
+be65dc8ac docs(diffs): clarify file size limitations
+882841811 test(subagent-announce): fix flaky Windows-only test failure (#31298) (openclaw#31370) thanks @zwffff
+4dd6c7a50 test(perf): avoid redundant root mkdir in hooks install tests
+d94de5c4a fix(cron): normalize topic-qualified target.to in messaging tool suppress check (#29480)
+09f49cd92 fix(cron): accept delivery mode "none" for sessionTarget="main" (#27431) (#28871)
+87d05592e docs(changelog): add telegram dm streaming note (#31824)
+d74bc257d fix(line): mark webhook route as plugin-authenticated
+6edb512ef feat(telegram): use sendMessageDraft for private chat streaming (#31824)
+c973b053a refactor(net): unify proxy env checks and guarded fetch modes
+a229ae6c3 chore(lint): add registerHttpHandler usage guard script
+2fd8264ab refactor(gateway): hard-break plugin wildcard http handlers
+b13d48987 refactor(gateway): unify control-ui and plugin webhook routing
+21708f58c fix(exec): resolve PATH key case-insensitively for Windows pathPrepend (#25399) (#31879)
+1ea42ebe9 fix(tsgo): unblock baseline type errors (#31873)
+3e5762c28 fix(security): harden sms.send dangerous-node defaults
+c4711a9b6 fix(gateway): let POST requests pass through root-mounted Control UI to plugin handlers
+ea204e65a fix(browser): fail closed navigation guard with env proxy
+14fbd0e6b test(perf): reduce timer teardown overhead in cron issue regressions
+17c434f2f refactor: split browser context/actions and unify CDP timeout policy
+19f5d1345 test(perf): cache redact hints and tune guardrail scan concurrency
+64c443ac6 docs(changelog): credit sessions_spawn agentId validation fix (#31381)
+b28e472fa fix(agents): validate sessions_spawn agentId format (#31381)
+0c6db05cc fix(agents): add strict format validation to sessions_spawn for agentId
+ade46d8ab fix(logging): log timestamps use local time instead of UTC (#28434)
+82247f09a test(perf): remove redundant module reset in system presence version tests
+d01e82d54 test(perf): avoid module reload churn in config guard tests
+93b072402 fix(gateway): fail closed plugin auth path canonicalization
+44270c533 docs(changelog): credit sandbox mkdirp boundary fix (#31547)
+dec2c9e74 fix(sandbox): allow mkdirp boundary checks on existing directories (#31547)
+6135eb335 fix(sandbox): allow mkdirp boundary check on existing directories
+345abf0b2 fix: preserve dns pinning for strict web SSRF fetches
+a3d2021ee test(cron): stabilize model precedence mocks in bun runs (#31594)
+e08ba063d test(android): fix GatewaySessionInvokeTest coroutine job typing (#31594)
+998d477f5 test: stabilize cross-platform regression suites (#31594)
+a49afd25e fix(secrets): ignore stdin EPIPE from fast-exit exec resolvers
+d86c1a67e fix(slack): correct typed message event overloads (#31701)
+05b84e718 fix(feishu): preserve explicit target routing hints (#31594) (thanks @liuxiaopai-ai)
+07b419a0e Feishu: honor group/dm prefixes in target parsing
+12be9a08f refactor(diffs): dedupe functions
+ee1b14763 fix(zalouser): harden inbound sender id handling
+208a9b1ad docs(zalouser): document js-native migration and breaking change
+0f00110f5 test(zalouser): expand native runtime regression coverage
+174f2de44 feat(zalouser): migrate runtime to native zca-js
+db3d8d82c test(perf): avoid module reset churn in daemon lifecycle tests
+3f2848433 test(perf): reuse suite temp-home fixture in config io write tests
+663c1858b refactor(browser): split server context and unify CDP transport
+729ddfd7c fix: add zalo webhook account-scope regression assertions (#26121) (thanks @bmendonca3)
+f39882d57 zalo: update pairing-store read assertion to scoped params object
+6b7d3fb01 security(zalo): scope pairing store by account
+c63c17927 chore: add changelog note for adapter sendPayload rollout (#30144) (thanks @nohat)
+dd3f7d57e sendPayload: add chunking, empty-payload guard, and tests
+47ef180fb sendPayload: explicit text fallback in text-only path
+ebe54e690 fix(adapters): restructure sendPayload media loop to avoid uninitialized lastResult
+d06ee8629 feat(adapters): add sendPayload to batch-d adapters
+f1cab9c5e fix: stabilize zalouser account-scope regression hook (#26672) (thanks @bmendonca3)
+f4c3e483f zalouser: update account-scope test for scoped store API
+6aa20e91d security(zalouser): scope pairing-store auth to accountId
+4b4ea5df8 feat(cron): add failure destination support to failed cron jobs (#31059)
+a905b6dab test(perf): merge duplicate one-shot retry regression paths
+44c50d9a7 fix(types): tighten shared helper typing contracts
+ed21b63bb refactor(plugin-sdk): share auth, routing, and stream/account helpers
+e9dd6121f refactor(core): dedupe embedding imports and env parsing
+dcf8308c8 refactor(ui): share channel config extras and hint types
+d212721df test(perf): merge forum-topic direct-delivery scenarios
+a469d0034 test(perf): reuse cron heartbeat delivery temp homes per suite
+3fb0ab743 test(perf): tighten cron issue-regression timeout windows
+64ac790aa test(perf): reuse temp-home root in cron announce delivery suite
+f1cd3ea53 fix(app:macos): 【 OpenClaw ⇄ clawdbot 】-  Peekaboo Bridge discovery after the OpenClaw rename (#6033)
+c5f1cf3c3 test(perf): reuse isolated-agent temp home root per suite
+87bd6226b test(perf): merge overlapping preaction hook scenarios
+9f98d2766 fix(logs): respect TZ env var for timestamp display, fix Windows timezone (#21859)
+944abe0a6 fix(security): recognize localized Windows SYSTEM account in ACL audit (#29698)
+dbc78243f refactor(scripts): share guard runners and paged select UI
+e41f9998f refactor(test): extract shared gateway hook and vitest scoped config helpers
+741e74972 refactor(plugin-sdk): share boolean action param parsing
+693f61404 refactor(shared): centralize assistant identity and usage timeseries types
+3efd224ec refactor(commands): dedupe session target resolution and fs tool test setup
+b85facfb5 refactor(android): share node JSON param parsing helpers
+e23b6fb2b fix(gateway): add Windows-compatible port detection using netstat fallback (openclaw#29239) thanks @ajay99511
+d145518f9 fix(cli): wait for process exit before restarting gateway on Windows (openclaw#27913) thanks @tda1017
+cd1847240 test(perf): trim redundant cron regression setup coverage
+2a11a20fe test(windows): stabilize exec wrapper mock assertions (#31771)
+2a2a9902d test(perf): merge isolated-agent model precedence cases
+5561a6b65 test(perf): dedupe isolated-agent delivery announce cases
+c2d41dc47 fix(daemon): recover Windows restarts from unknown stale listeners (openclaw#24734) thanks @chilu18
+a05b8f47b test(perf): tighten cron regression timeout windows
+7d600ff4e test(perf): dedupe plugin validation scenarios
+38bdb0d27 test(perf): prune redundant preaction command-path cases
+32475448e test(perf): trim ios team-id fixture setup
+8421b2e84 fix(gateway): avoid stale running status from Windows Scheduled Task (openclaw#19504) thanks @Fologan
+f2468feb8 test(perf): use shell resolver fixture in secrets audit
+1fe0f848d fix(slack): type message.channels/group handlers (#31758)
+98e5851d8 test(perf): collapse overlapping preaction scenarios
+cd653c55d windows: unify non-core spawn handling across acp qmd and docker (openclaw#31750) thanks @Takhoffman
+32c724297 test(perf): simplify ios team-id fixtures
+534f436d4 test(perf): reduce repeated cli program setup overhead
+234e07fcc refactor(process): extract command env resolution helper
+9eb70d272 fix: add proxy-bypass regression + changelog (#31469) (thanks @widingmarcus-cyber)
+2bec80cd9 fix: preserve user-configured NO_PROXY when loopback already covered
+dd8c76110 fix: remove isFirst guard from NO_PROXY restore, add reverse-exit test
+158709ff6 fix: make withNoProxyForLocalhost reentrant-safe, fix [::1] check
+c96234b51 fix: bypass proxy for CDP localhost connections (#31219)
+1184d39e1 fix: extend managed-tab cap regressions + changelog (#29724) (thanks @pandego)
+e303b356b fix(browser): detach tab-cap listing from openTab return path
+22ec577d8 fix(browser): require managed runtime ownership for tab cap cleanup
+9b938f2bf fix(browser): skip tab cap cleanup for attach-only profiles
+c7bf54b91 fix(browser): scope tab cap to local profile and detach cleanup closes
+c350dc8a7 fix(browser): keep tab-cap cleanup best-effort on list errors
+b47dc73b7 fix(browser): cap managed profile tabs to prevent renderer buildup
+050e92898 [codex] Fix main-session web UI reply routing to Telegram (openclaw#29328) thanks @BeeSting50
+99ee26d53 fix: add timeout cleanup regression for browser CDP readiness (#29538) (thanks @AaronWander)
+8bccb0032 fix(browser): bound post-launch CDP wait by elapsed time (#21149)
+d06cc77f3 fix(browser): wait for CDP readiness after start (#21149)
+0d620a56e test(refactor): reuse shared program setup in preaction tests
+09748ab10 test(perf): speed up supervisor and exec process tests
+2d8b8a17a test(android): dedupe node and gateway invoke tests
+6ea6aca5b fix(ui): the header has been hidden by content in the config page
+7b5a410b8 fix(node-host): decode Windows exec output with active code page (openclaw#30652) thanks @Sid-Qin
+6e008e93b Process: fix Windows .cmd spawn EINVAL (openclaw#29759) thanks @icesword0760
+732c4f392 fix(browser): retry chrome act when target tab is stale
+910c65480 test(config): add schema regression tests for browser.extraArgs
+925117d27 config: add extraArgs to browser zod schema
+be8930d6f fix: clear stale runningAtMs in cron.run() before already-running check (#17949)
+60b8d645d test(perf): standardize loader fixtures to cjs
+097ad88f9 fix(feishu): tolerate missing webhook defaults in older plugin-sdk (openclaw#31639) thanks @liuxiaopai-ai
+6df8bd974 fix(cron): wrap computeJobNextRunAtMs in try-catch inside applyJobResult (#30905)
+21e19e42a fix(cron): skip isError payloads when picking summary/delivery content (#21454)
+2c192a379 test(perf): reduce cron overlap timer advance slack
+02bd7a224 test(perf): use CJS fixtures in plugin loader tests
+aa5d173be fix(feishu): prevent duplicate delivery when message tool uses generic provider (openclaw#31538) thanks @jlgrimes
+06306501a Slack: register typed channel/group message event handlers
+6513c42d2 fix(cron): treat announce delivery failure as ok when execution succeeded (#31082)
+16e85360a perf(cli): cache preaction lazy module imports
+4d31c29a1 test(perf): skip shell profile loading in ios team-id script tests
+79cb5e2c9 test(perf): trim cron regression timeout windows
+b40d5817a fix(cron): avoid 30s timeout for cron run --expect-final (#29942)
+254bb7cee ui(cron): add advanced controls for run-if-due and routing (#31244)
+127217612 fix(CI/CD): use path.resolve in expandHomePrefix test for Windows compat (#30961)
+0b762e9a0 fix(android): import remember for pending tools bubble
+cb9bce902 fix(infra): accept cross-realm promises in boundary traversal
+848ade07d test(cli): fix gateway coverage mock signature
+a9d572394 test(perf): tighten exec timeout slack in non-flaky cases
+b02b94673 refactor: dedupe runtime and helper flows
+5d3f066bb test(perf): reduce boundary-path fuzz setup churn
+6adc93cc9 test(perf): skip scheduler startup in cron delivery-plan tests
+e99928f3f test(perf): use git ls-files fast path for guardrail source scan
+afda085b3 test(perf): disable scheduler startup in manual-only cron regressions
+3980c315d test(perf): avoid real node startup in pre-commit hook integration
+7b38e8231 test(perf): stub expensive cli coverage integration paths
+f94d6fb1f test(perf): stub pre-commit helpers in hook integration test
+5fed91e62 test(perf): avoid real python startup in ios team-id integration case
+ba3957ad7 test(perf): bypass daemon install token-generation path in coverage test
+916b0e660 test(perf): tighten cron regression timeout constants
+099b11fc7 test(perf): align media auto-detect no-key mock with scenario
+f7b8e4be2 test(fix): stabilize exec no-output heartbeat timing case
+2cda78a0b test(perf): stub docker probes in filesystem audit cases
+87316e07d refactor(macos): share pairing and ui dedupe utilities
+d85d3c88d refactor(agents): centralize tool display definitions
+d977af585 refactor(diffs): share artifact detail and screenshot test helpers
+753301553 refactor(android): extract shared dedupe helpers for node and chat
+f01862bce test(perf): clear concurrent-start timeout handle in cron regression test
+8e0ca219a test(perf): precreate plugin config validation fixtures
+bdfd3bae6 test(perf): reuse cli programs in coverage tests
+adf2ef88c test(perf): simplify temp-path guard scan loop
+d95bc1042 test(perf): streamline deep code-safety audit assertions
+d9ff3bf1a test(perf): tighten process exec and supervisor timing fixtures
+2b855704d test(perf): remove redundant ios team-id script invocation
+c80a332de test(perf): cut cron retry waits and tighten tmp guard prefilter
+d9a8d3853 test(perf): trim qmd manager fixture setup overhead
+94e480f64 test(refactor): dedupe preaction command coverage
+735216f7e test(perf): reduce security audit and guardrail overhead
+316875582 test(perf): speed up pre-commit integration setup
+43bffe7bd test(perf): cache plugin fixtures and streamline shell tests
+cf67e374c refactor(macos): dedupe UI, pairing, and runtime helpers
+cd011897d refactor(ios): dedupe status, gateway, and service flows
+2ca572222 refactor(shared): dedupe common OpenClawKit helpers
+3dd01c336 test(perf): reuse shared temp root in plugin install tests
+79b649a25 test: fix signal-listener typing in exec bridge test
+0c2d85529 test(refactor): dedupe cli and ios script scenarios
+1b9887929 test(perf): reduce guardrail and media test overhead
+bff785aec test(perf): tighten process test timeouts and fs setup
+4dcb16d69 ci: fix install smoke docker helper path
+96ef6ea3c test(perf): dedupe setup in cli/security script suites
+4a8ada662 test(perf): cache media fixtures and trim timeout waits
+8a1465c31 test(perf): trim timer-heavy suites and guardrail scanning
+f5a265a51 test(sessions): normalize cross-agent path assertions
+033c731f1 fix(ci): annotate feishu hoisted mock type
+c1a46301b fix(ci): align strict nullable typing across channels and ui
+fc692d82f refactor(tests): dedupe macos ipc smoke setup blocks
+8553d2242 refactor(tests): dedupe ios gateway and deeplink fixtures
+7d44b753f refactor(tests): dedupe openclawkit chat test helpers
+04030ddf6 test(runtime): trim timer-heavy regression suites
+fd4d157e4 test(config): reuse fixtures for faster validation
+fcb956a0a test(cli): reduce update/program suite overhead
+500883775 refactor(tests): dedupe ios defaults and setup-code helpers
+fd7774a79 refactor(tests): dedupe swift gateway and chat fixtures
+5f49a5da3 Diffs: extend image quality configs and add PDF as a format option (#31342)
+756f9c9fe refactor(scripts): dedupe installer CLI verification
+ad8d766f6 refactor(extensions): dedupe channel config, onboarding, and monitors
+d358b3ac8 refactor(core): extract shared usage, auth, and display helpers
+e427826fc refactor(ui): dedupe state, views, and usage helpers
+00a2456b7 refactor(scripts): dedupe guard checks and smoke helpers
+5d53b61d9 fix(browser): honor profile attachOnly for loopback CDP (#31429)
+29c3ce945 [AI-assisted] test: fix typing and test fixture issues (#31444)
+1443bb9a8 chore(tsgo/lint): fix CI errors
+22be0c580 fix(browser): support configurable CDP auto-port range start (#31352)
+c6e5026ed Docs: sort provider lists A-Z
+7e8118a93 Docs: sort built-in tools links A-Z
+c977ac8d2 Docs: sort supported channels A-Z
+ee22a01ec Docs: remove dead concepts/sessions alias
+abe0edaba Docs: sort channels list by name across locales
+a969df4c0 Docs: remove quickstart from first steps nav
+fbc1585b3 fix(pairing): handle missing accountId in allowFrom reads (#31369)
+e055afd00 fix(browser): accept legacy flattened act params (#31359)
+5b55c2394 fix(browser): evict stale extension relay targets from cache (#31362)
+db28dda12 fix(cli): let browser start honor --timeout (#31365)
+f4785c1a7 Docs: expand sandbox guide for common image and Docker bootstrap
+c00d5837d style(agents): format pdf tool test after rebase
+45d77cac1 test(agents): dedupe remaining tool and lock test scaffolds
+c3948800f refactor(agents): extract shared tool model helpers
+45888276a test(integration): dedupe messaging, secrets, and plugin test suites
+d3e0c0b29 test(gateway): dedupe gateway and infra test scaffolds
+cded1b960 test(commands): dedupe command and onboarding test cases
+7e29d604b test(agents): dedupe agent and cron test scaffolds
+281494ae5 fix(browser): include Chrome stderr and sandbox hint in CDP startup error (#29355)
+cb491dfde feat(docker): add opt-in sandbox support for Docker deployments (#29974)
+f918b336d fix: agent-only announce path, BB message IDs, sender identity, SSRF allowlist (#23970)
+cfba64c9d test: fix pdf-tool fetch/model config mock typings
+e876c2c3b fix: finalize headless profile default landing (#14944) (thanks @BenediktSchackenberg)
+d03928bb6 test: Add tests for headless/noSandbox profile preference
+3e3b49cb9 fix(browser): prefer openclaw profile in headless/noSandbox environments
+d0ac1b019 feat: add PDF analysis tool with native provider support (#31319)
+31b6e58a1 docs: add relay reattach changelog attribution (#28725) (thanks @stone-jin)
+04b3a51d3 fix(browser): preserve debugger attachment across relay disconnects during navigation reattach
+18cd77c8c fix: cover relay reannounce minimal target path (#27630) (thanks @markmusson)
+591ff3c1c fix(browser-relay): fallback to cached targetId on target info lookup failure
+3ae8e5ee9 Docs: add changelog entry for auth permission error (#31367)
+b3cf6e7d7 fix: harden relay reconnect grace coverage (#30232) (thanks @Sid-Qin)
+f77f3fb83 fix(browser): tolerate brief extension relay disconnects on attached tabs
+0eebae44f fix: test browser.request profile body fallback (#28852) (thanks @Sid-Qin)
+fa875a6bf fix(gateway): honor browser profile from request body for node proxy calls
+40e078a56 fix(auth): classify permission_error as auth_permanent for profile fallback (#31324)
+f2dbaf70f docs: add Vercel sponsorship (#29270)
+821b7c80a fix(browser): avoid extension profile startup deadlock in browser start
+5b8f492a4 fix(security): harden spoofed system marker handling
+7c9d2c1d4 fix(browser): retry relay navigation after frame detach
+376a52a5b fix: use 0o644 for inbound media files to allow sandbox read access (#17943)
+366374b4f Sandbox: add actionable error when docker missing (#28547)
+3049ca840 docs: replace bare provider URLs with markdown links
+5bb26bf22 fix(browser): skip port ownership check for remote CDP profiles (#28780)
+cda119b05 fix: handle missing systemctl in containers (#26089) (#26699)
+5d78fcf1b docs: add missing message channels to readme
+bc0288bcf docs: clarify adaptive thinking and openai websocket docs
+e1e715c53 fix(gateway): skip device pairing for local backend self-connections (#30801)
+3002f13ca feat(config): add `openclaw config validate` and improve startup error messages (#31220)
+5a2200b28 fix(sessions): harden recycled PID lock recovery follow-up (#31320)
+548a502c6 docs: sync android node docs with current pairing and capabilities
+a9f118878 sessions_spawn: inline attachments with redaction, lifecycle cleanup, and docs (#16761)
+842deefe5 test: split fast lane from channel and gateway suites
+a13586619 test: move integration-heavy suites to e2e lane
+656121a12 test: micro-optimize hot unit test files
+1de320097 refactor(infra): centralize boundary traversal and root path checks
+7fcec6ca3 refactor(streaming): share approval and stream message builders
+6b78544f8 refactor(commands): unify repeated ACP and routing flows
+2d31126e6 refactor(shared): extract reused path and normalization helpers
+264599cc1 refactor(core): share JSON utf8 byte counting helper
+4a1be9825 fix(diffs): harden viewer security and docs
+0ab2c8262 docs: dedupe 2026.3.1 changelog entries
+6ba7238ac build: bump versions to 2026.3.2
+d2472af72  Chore: add Dockerfile HEALTHCHECK and debug-log silent catch blocks (#11478)
+2a8ac974e build: prepare 2026.3.1 latest release
+449511484 fix(gateway): allow ws:// to private network addresses (#28670)

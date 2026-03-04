@@ -281,6 +281,7 @@ type ResolvedActionContext = {
   gateway?: MessageActionRunnerGateway;
   input: RunMessageActionParams;
   agentId?: string;
+  mediaLocalRoots?: readonly string[];
   resolvedTarget?: ResolvedMessagingTarget;
   abortSignal?: AbortSignal;
 };
@@ -296,6 +297,27 @@ function resolveGateway(input: RunMessageActionParams): MessageActionRunnerGatew
     clientDisplayName: input.gateway.clientDisplayName,
     mode: input.gateway.mode,
   };
+}
+
+function mergeMediaLocalRoots(
+  ...groups: Array<readonly string[] | undefined>
+): readonly string[] | undefined {
+  const seen = new Set<string>();
+  const merged: string[] = [];
+  for (const group of groups) {
+    if (!group) {
+      continue;
+    }
+    for (const root of group) {
+      const trimmed = root.trim();
+      if (!trimmed || seen.has(trimmed)) {
+        continue;
+      }
+      seen.add(trimmed);
+      merged.push(trimmed);
+    }
+  }
+  return merged.length > 0 ? merged : undefined;
 }
 
 async function handleBroadcastAction(
@@ -389,6 +411,7 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
     gateway,
     input,
     agentId,
+    mediaLocalRoots,
     resolvedTarget,
     abortSignal,
   } = ctx;
@@ -528,6 +551,7 @@ async function handleSendAction(ctx: ResolvedActionContext): Promise<MessageActi
       toolContext: input.toolContext,
       deps: input.deps,
       dryRun,
+      mediaLocalRoots,
       mirror:
         outboundRoute && !dryRun
           ? {
@@ -734,6 +758,10 @@ export async function runMessageAction(
     sandboxRoot: input.sandboxRoot,
     mediaLocalRoots,
   });
+  const resolvedMediaLocalRoots =
+    mediaPolicy.mode === "sandbox"
+      ? mergeMediaLocalRoots([mediaPolicy.sandboxRoot], mediaLocalRoots)
+      : mediaLocalRoots;
 
   await normalizeSandboxMediaParams({
     args: params,
@@ -778,6 +806,7 @@ export async function runMessageAction(
       gateway,
       input,
       agentId: resolvedAgentId,
+      mediaLocalRoots: resolvedMediaLocalRoots,
       resolvedTarget,
       abortSignal: input.abortSignal,
     });

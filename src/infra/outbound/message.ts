@@ -34,6 +34,8 @@ type MessageSendParams = {
   content: string;
   /** Active agent id for per-agent outbound media root scoping. */
   agentId?: string;
+  /** Additional media roots to allow for this outbound request. */
+  mediaLocalRoots?: readonly string[];
   channel?: string;
   mediaUrl?: string;
   mediaUrls?: string[];
@@ -222,6 +224,7 @@ export async function sendMessage(params: MessageSendParams): Promise<MessageSen
       payloads: normalizedPayloads,
       replyToId: params.replyToId,
       threadId: params.threadId,
+      mediaLocalRoots: params.mediaLocalRoots,
       gifPlayback: params.gifPlayback,
       deps: params.deps,
       bestEffort: params.bestEffort,

@@ -1,0 +1,74 @@
+From 997bc4469f3b61f1ce7cdd9dd5b8fd8b3862fd50 Mon Sep 17 00:00:00 2001
+From: qu4ntum <qu4ntum@users.noreply.github.com>
+Date: Sun, 1 Mar 2026 06:29:16 -0300
+Subject: [PATCH 03/10] Gateway: prefer config auth over env for local CLI
+ calls
+
+---
+ src/gateway/call.test.ts | 19 +++++++++++++++++--
+ src/gateway/call.ts      |  5 +++++
+ 2 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/src/gateway/call.test.ts b/src/gateway/call.test.ts
+index 5dd982d6e..0e7f0847e 100644
+--- a/src/gateway/call.test.ts
++++ b/src/gateway/call.test.ts
+@@ -613,7 +613,7 @@ describe("callGateway password resolution", () => {
+       expectedPassword: "secret",
+     },
+     {
+-      label: "prefers env password over local config password",
++      label: "prefers local config password over env password in local mode",
+       envPassword: "from-env",
+       config: {
+         gateway: {
+@@ -622,7 +622,7 @@ describe("callGateway password resolution", () => {
+           auth: { password: "from-config" },
+         },
+       },
+-      expectedPassword: "from-env",
++      expectedPassword: "from-config",
+     },
+     {
+       label: "uses remote password in remote mode when env is unset",
+@@ -647,6 +647,21 @@ describe("callGateway password resolution", () => {
+     expect(lastClientOptions?.password).toBe(expectedPassword);
+   });
+ 
++  it("prefers local config token over env token in local mode", async () => {
++    process.env.OPENCLAW_GATEWAY_TOKEN = "env-token";
++    loadConfig.mockReturnValue({
++      gateway: {
++        mode: "local",
++        bind: "loopback",
++        auth: { token: "from-config" },
++      },
++    });
++
++    await callGateway({ method: "health" });
++
++    expect(lastClientOptions?.token).toBe("from-config");
++  });
++
+   it.each(explicitAuthCases)("uses explicit $label when url override is set", async (testCase) => {
+     process.env[testCase.envKey] = testCase.envValue;
+     const auth = { [testCase.authKey]: testCase.configValue } as {
+diff --git a/src/gateway/call.ts b/src/gateway/call.ts
+index 58da45db0..bb44abb1c 100644
+--- a/src/gateway/call.ts
++++ b/src/gateway/call.ts
+@@ -301,6 +301,11 @@ function resolveGatewayCredentials(context: ResolvedGatewayCallContext): {
+     explicitAuth: context.explicitAuth,
+     urlOverride: context.urlOverride,
+     urlOverrideSource: context.urlOverrideSource,
++    // For local CLI gateway calls, prefer configured shared credentials over ambient shell env.
++    // This prevents stale OPENCLAW_GATEWAY_TOKEN values from silently overriding the active config.
++    localTokenPrecedence: "config-first",
++    localPasswordPrecedence: "config-first",
++    includeLegacyEnv: false,
+     remotePasswordPrecedence: "env-first",
+   });
+ }
+-- 
+2.51.0
+
